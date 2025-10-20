@@ -1,317 +1,230 @@
-import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Badge } from '@/components/ui/badge'
-import { 
-  Plus, 
-  Trash2, 
-  Eye, 
-  Edit,
-  Save,
-  Copy,
-  BookOpen,
-  Target,
-  Clock,
-  CheckCircle,
-  X,
-  Calculator,
-  Type,
-  List,
-  ToggleLeft,
-  FileText,
-  Search
-} from 'lucide-react'
+import { downloadFile, normalize, parseCSV, safeSplit, todayISO, toQuestionFromCSVRow } from '@/utils/qb-utils'
 
-const QuestionBuilder = () => {
-  const [activeTab, setActiveTab] = useState('create')
-  const [questionType, setQuestionType] = useState('')
-  const [questionData, setQuestionData] = useState({
-    title: '',
-    subject: '',
-    topic: '',
-    difficulty: '',
-    questionText: '',
+const TYPES = [
+  { value: 'single', label: 'Single Choice' },
+  { value: 'multiple', label: 'Multiple Choice' },
+  { value: 'fill', label: 'Fill-in' },
+  { value: 'short', label: 'Short Answer' },
+]
+
+const DIFF = [
+  { value: 'easy', label: 'Easy' },
+  { value: 'moderate', label: 'Moderate' },
+  { value: 'advanced', label: 'Advanced' },
+]
+
+const SUBJECTS = ['Algebra', 'Geometry', 'Statistics', 'Calculus', 'Pre-Algebra', 'Trigonometry']
+
+function emptyForm(type = 'single') {
+  return {
+    type,
+    prompt: '',
+    options: '',
+    answers: '',
+    correct: '',
     explanation: '',
-    hints: [''],
-    options: ['', '', '', ''],
-    correctAnswer: '',
-    points: 1,
-    timeLimit: 60,
-    tags: []
+    subject: '',
+    grade: '',
+    difficulty: 'easy',
+    tags: '',
+  }
+}
+
+export default function QuestionBuilder() {
+  // Local persistence keys
+  const LS = {
+    form: 'qb_form_v1',
+    questions: 'qb_questions_v1',
+    replaceMode: 'qb_replace_v1',
+    tab: 'qb_tab_v1',
+    editing: 'qb_editing_v1',
+    filterSubject: 'qb_filter_subject_v1',
+    filterDifficulty: 'qb_filter_difficulty_v1',
+  }
+
+  const [questions, setQuestions] = useState(() => {
+    try {
+      const saved = localStorage.getItem(LS.questions)
+      if (saved) {
+        const list = JSON.parse(saved)
+        if (Array.isArray(list)) return list.map(item => normalize(item))
+      }
+    } catch {}
+    return []
+  })
+  const [activeTab, setActiveTab] = useState(() => {
+    try { return localStorage.getItem(LS.tab) || 'import' } catch { return 'import' }
+  })
+  const [replaceMode, setReplaceMode] = useState(() => {
+    try { const v = localStorage.getItem(LS.replaceMode); return v ? v === 'true' : false } catch { return false }
+  })
+  const [form, setForm] = useState(() => {
+    try {
+      const saved = localStorage.getItem(LS.form)
+      if (saved) return { ...emptyForm('single'), ...JSON.parse(saved) }
+    } catch {}
+    return emptyForm('single')
+  })
+  const [editingId, setEditingId] = useState(() => {
+    try { return localStorage.getItem(LS.editing) || null } catch { return null }
+  })
+  const fileRef = useRef()
+
+  // Manage filters
+  const [filterSubject, setFilterSubject] = useState(() => {
+    try { return localStorage.getItem(LS.filterSubject) || '' } catch { return '' }
+  })
+  const [filterDifficulty, setFilterDifficulty] = useState(() => {
+    try { return localStorage.getItem(LS.filterDifficulty) || '' } catch { return '' }
   })
 
-  const [savedQuestions, setSavedQuestions] = useState([
-    {
-      id: 1,
-      title: 'Quadratic Formula Application',
-      subject: 'Algebra',
-      topic: 'Quadratic Equations',
-      type: 'Multiple Choice',
-      difficulty: 'Moderate',
-      points: 2,
-      created: '2024-01-15',
-      status: 'published'
-    },
-    {
-      id: 2,
-      title: 'Triangle Area Calculation',
-      subject: 'Geometry',
-      topic: 'Area and Perimeter',
-      type: 'Short Answer',
-      difficulty: 'Easy',
-      points: 1,
-      created: '2024-01-12',
-      status: 'draft'
-    },
-    {
-      id: 3,
-      title: 'Probability of Events',
-      subject: 'Statistics',
-      topic: 'Probability',
-      type: 'True/False',
-      difficulty: 'Advanced',
-      points: 3,
-      created: '2024-01-10',
-      status: 'published'
-    }
-  ])
-
-  const subjects = ['Algebra', 'Geometry', 'Statistics', 'Calculus', 'Pre-Algebra', 'Trigonometry']
-  const difficulties = ['Easy (0-40)', 'Moderate (40-80)', 'Advanced (80-100)']
-  const questionTypes = ['Multiple Choice', 'Short Answer', 'True/False', 'Fill in the Blank', 'Essay']
-  
-  const topicsBySubject = {
-    'Algebra': ['Linear Equations', 'Quadratic Equations', 'Polynomials', 'Factoring', 'Systems of Equations', 'Inequalities'],
-    'Geometry': ['Area and Perimeter', 'Volume', 'Angles', 'Triangles', 'Circles', 'Coordinate Geometry'],
-    'Statistics': ['Mean and Median', 'Standard Deviation', 'Probability', 'Distributions', 'Hypothesis Testing', 'Correlation']
-  }
-
-  const handleInputChange = (field, value) => {
-    setQuestionData(prev => ({ ...prev, [field]: value }))
-  }
-
-  const handleOptionChange = (index, value) => {
-    const newOptions = [...questionData.options]
-    newOptions[index] = value
-    setQuestionData(prev => ({ ...prev, options: newOptions }))
-  }
-
-  const handleHintChange = (index, value) => {
-    const newHints = [...questionData.hints]
-    newHints[index] = value
-    setQuestionData(prev => ({ ...prev, hints: newHints }))
-  }
-
-  const addHint = () => {
-    setQuestionData(prev => ({ ...prev, hints: [...prev.hints, ''] }))
-  }
-
-  const removeHint = (index) => {
-    if (questionData.hints.length > 1) {
-      const newHints = questionData.hints.filter((_, i) => i !== index)
-      setQuestionData(prev => ({ ...prev, hints: newHints }))
-    }
-  }
-
-  const addOption = () => {
-    if (questionData.options.length < 6) {
-      setQuestionData(prev => ({ ...prev, options: [...prev.options, ''] }))
-    }
-  }
-
-  const removeOption = (index) => {
-    if (questionData.options.length > 2) {
-      const newOptions = questionData.options.filter((_, i) => i !== index)
-      setQuestionData(prev => ({ ...prev, options: newOptions }))
-    }
-  }
-
-  const saveQuestion = () => {
-    const newQuestion = {
-      id: savedQuestions.length + 1,
-      title: questionData.title,
-      subject: questionData.subject,
-      topic: questionData.topic,
-      type: questionType,
-      difficulty: questionData.difficulty,
-      points: questionData.points,
-      created: new Date().toISOString().split('T')[0],
-      status: 'draft'
-    }
-    setSavedQuestions([...savedQuestions, newQuestion])
-    
-    // Reset form
-    setQuestionData({
-      title: '',
-      subject: '',
-      topic: '',
-      difficulty: '',
-      questionText: '',
-      explanation: '',
-      hints: [''],
-      options: ['', '', '', ''],
-      correctAnswer: '',
-      points: 1,
-      timeLimit: 60,
-      tags: []
+  const payload = useMemo(() => ({ questions }), [questions])
+  const subjectsForFilter = useMemo(() => {
+    const set = new Set(SUBJECTS)
+    questions.forEach(q => {
+      const s = q?.metadata?.subject
+      if (s) set.add(s)
     })
-    setQuestionType('')
+    return Array.from(set)
+  }, [questions])
+  const filteredQuestions = useMemo(() => {
+    return questions.filter(q => {
+      const sOk = !filterSubject || (q.metadata?.subject || '') === filterSubject
+      const dOk = !filterDifficulty || (q.metadata?.difficulty || '') === filterDifficulty
+      return sOk && dOk
+    })
+  }, [questions, filterSubject, filterDifficulty])
+
+
+  // Persist on change
+  useEffect(() => { try { localStorage.setItem(LS.form, JSON.stringify(form)) } catch {} }, [form])
+  // Ensure latest draft is saved on unmount (e.g., fast navigation)
+  useEffect(() => {
+    return () => {
+      try { localStorage.setItem(LS.form, JSON.stringify(form)) } catch {}
+    }
+  }, [form])
+  useEffect(() => { try { localStorage.setItem(LS.questions, JSON.stringify(questions)) } catch {} }, [questions])
+  useEffect(() => { try { localStorage.setItem(LS.replaceMode, String(replaceMode)) } catch {} }, [replaceMode])
+  useEffect(() => { try { localStorage.setItem(LS.tab, activeTab) } catch {} }, [activeTab])
+  useEffect(() => { try { editingId ? localStorage.setItem(LS.editing, editingId) : localStorage.removeItem(LS.editing) } catch {} }, [editingId])
+  useEffect(() => { try { localStorage.setItem(LS.filterSubject, filterSubject) } catch {} }, [filterSubject])
+  useEffect(() => { try { localStorage.setItem(LS.filterDifficulty, filterDifficulty) } catch {} }, [filterDifficulty])
+
+    function onChange(field, value) {
+      setForm(prev => {
+        const next = { ...prev, [field]: value }
+        try { localStorage.setItem('qb_form_v1', JSON.stringify(next)) } catch {}
+        return next
+      })
+    }
+
+function addOrUpdate() {
+    const raw = {
+      ...form,
+      options: safeSplit(form.options || '', '|'),
+      answers: safeSplit(form.answers || '', '|'),
+    }
+    const q = normalize(raw)
+    if (editingId) {
+      setQuestions(prev => prev.map(it => it.id === editingId ? { ...q, id: editingId } : it))
+      setEditingId(null)
+    } else {
+      setQuestions(prev => [...prev, q])
+    }
+    const cleared = emptyForm(form.type)
+    setForm(cleared)
+    try { localStorage.setItem('qb_form_v1', JSON.stringify(cleared)) } catch {}
   }
 
-  const renderQuestionTypeForm = () => {
-    switch(questionType) {
-      case 'Multiple Choice':
-        return (
-          <div className="space-y-4">
-            <div>
-              <Label>Answer Options</Label>
-              <div className="space-y-2 mt-2">
-                {questionData.options.map((option, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <span className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-sm font-medium">
-                      {String.fromCharCode(65 + index)}
-                    </span>
-                    <Input
-                      value={option}
-                      onChange={(e) => handleOptionChange(index, e.target.value)}
-                      placeholder={`Option ${String.fromCharCode(65 + index)}`}
-                      className="flex-1"
-                    />
-                    {questionData.options.length > 2 && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => removeOption(index)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-                {questionData.options.length < 6 && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={addOption}
-                    className="mt-2"
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Add Option
-                  </Button>
-                )}
-              </div>
-            </div>
-            <div>
-              <Label>Correct Answer</Label>
-              <Select value={questionData.correctAnswer} onValueChange={(value) => handleInputChange('correctAnswer', value)}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select correct answer" />
-                </SelectTrigger>
-                <SelectContent>
-                  {questionData.options.map((option, index) => (
-                    option && (
-                      <SelectItem key={index} value={String.fromCharCode(65 + index)}>
-                        {String.fromCharCode(65 + index)}: {option.substring(0, 30)}{option.length > 30 ? '...' : ''}
-                      </SelectItem>
-                    )
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        )
+  function onEdit(q) {
+    setEditingId(q.id)
+    const type = q.type
+    const options = Array.isArray(q.options) ? q.options.map(o => o.text).join('|') : ''
+    const correct = Array.isArray(q.options) ? q.options.flatMap((o, idx) => o.correct ? [String(idx + 1)] : []).join(',') : ''
+    const answers = Array.isArray(q.answers) ? q.answers.join('|') : ''
+    const tags = (q.metadata?.tags || []).join(',')
+    setForm({
+      type,
+      prompt: q.prompt || '',
+      options,
+      answers,
+      correct,
+      explanation: q.explanation || '',
+      subject: q.metadata?.subject || '',
+      grade: q.metadata?.grade || '',
+      difficulty: q.metadata?.difficulty || 'easy',
+      tags,
+    })
+  }
 
-      case 'Short Answer':
-        return (
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="correctAnswer">Correct Answer</Label>
-              <Input
-                id="correctAnswer"
-                value={questionData.correctAnswer}
-                onChange={(e) => handleInputChange('correctAnswer', e.target.value)}
-                placeholder="Enter the correct answer"
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label>Acceptable Variations (optional)</Label>
-              <textarea
-                placeholder="Enter alternative acceptable answers, one per line"
-                className="mt-1 w-full p-3 border border-slate-300 rounded-md resize-none h-20"
-              />
-            </div>
-          </div>
-        )
-
-      case 'True/False':
-        return (
-          <div>
-            <Label>Correct Answer</Label>
-            <Select value={questionData.correctAnswer} onValueChange={(value) => handleInputChange('correctAnswer', value)}>
-              <SelectTrigger className="mt-1">
-                <SelectValue placeholder="Select correct answer" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="true">True</SelectItem>
-                <SelectItem value="false">False</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        )
-
-      case 'Fill in the Blank':
-        return (
-          <div className="space-y-4">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h4 className="font-medium text-blue-900 mb-2">Instructions</h4>
-              <p className="text-sm text-blue-700">
-                Use [BLANK] in your question text to indicate where students should fill in answers.
-                Example: "The value of x in the equation 2x + 5 = 13 is [BLANK]."
-              </p>
-            </div>
-            <div>
-              <Label htmlFor="correctAnswer">Correct Answer(s)</Label>
-              <Input
-                id="correctAnswer"
-                value={questionData.correctAnswer}
-                onChange={(e) => handleInputChange('correctAnswer', e.target.value)}
-                placeholder="Enter correct answer(s), separated by commas"
-                className="mt-1"
-              />
-            </div>
-          </div>
-        )
-
-      case 'Essay':
-        return (
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="rubric">Grading Rubric</Label>
-              <textarea
-                id="rubric"
-                placeholder="Describe the grading criteria and key points students should address..."
-                className="mt-1 w-full p-3 border border-slate-300 rounded-md resize-none h-24"
-              />
-            </div>
-            <div>
-              <Label htmlFor="sampleAnswer">Sample Answer (optional)</Label>
-              <textarea
-                id="sampleAnswer"
-                placeholder="Provide a sample answer or key points..."
-                className="mt-1 w-full p-3 border border-slate-300 rounded-md resize-none h-24"
-              />
-            </div>
-          </div>
-        )
-
-      default:
-        return null
+  function onDelete(id) {
+    if (confirm('Delete this question?')) {
+      setQuestions(prev => prev.filter(q => q.id !== id))
+      if (editingId === id) {
+        setEditingId(null)
+        setForm(emptyForm('single'))
+      }
     }
+  }
+
+  async function onImportFile(ev) {
+    const file = ev.target.files && ev.target.files[0]
+    if (!file) return
+    const text = await file.text()
+    try {
+      let imported = []
+      const name = file.name.toLowerCase()
+      const looksJSON = name.endsWith('.json') || text.trim().startsWith('{') || text.trim().startsWith('[')
+      if (looksJSON) {
+        const data = JSON.parse(text)
+        const list = Array.isArray(data) ? data : Array.isArray(data.questions) ? data.questions : []
+        imported = list.map(q => normalize(q))
+      } else {
+        const sep = name.endsWith('.tsv') ? '\t' : ','
+        const { rows } = parseCSV(text, sep)
+        imported = rows.map(r => toQuestionFromCSVRow(r)).filter(q => q.prompt)
+      }
+      if (!imported.length) { alert('No questions found.'); ev.target.value = ''; return }
+      setQuestions(prev => replaceMode ? imported : [...prev, ...imported])
+      ev.target.value = ''
+    } catch (err) {
+      console.error(err)
+      alert('Import failed. Ensure valid JSON/CSV.')
+      ev.target.value = ''
+    }
+  }
+
+  function onExportJSON() {
+    const name = `question_set_${todayISO()}.json`
+    downloadFile(name, JSON.stringify(payload, null, 2), 'application/json')
+  }
+
+  async function onCopyJSON() {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(payload, null, 2))
+      alert('JSON copied.')
+    } catch (e) {
+      alert('Copy failed: clipboard permission.')
+    }
+  }
+
+  function onDownloadCSVTemplate() {
+    const header = ['type','prompt','options','answers','explanation','subject','grade','difficulty','tags','correct']
+    const row1 = ['single','What is 2+3?','4|5|6','', 'Addition basics','Math','3','easy','arithmetic,addition','2']
+    const row2 = ['fill','Solve x^2 = 9','', '3|-3','Square roots','Math','7','moderate','algebra,equations','']
+    const escape = (v) => {
+      const s = String(v ?? '')
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s
+    }
+    const csv = [header, row1, row2].map(arr => arr.map(escape).join(',')).join('\n')
+    downloadFile('question_template.csv', csv, 'text/csv')
   }
 
   return (
@@ -319,352 +232,219 @@ const QuestionBuilder = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Question Builder</h1>
-          <p className="text-slate-600 mt-1">Create new math questions for practice and exams</p>
+          <p className="text-slate-600 mt-1">Create questions or import via JSON/CSV template</p>
         </div>
       </div>
 
-      {/* Tab Navigation */}
       <div className="border-b border-slate-200">
         <nav className="-mb-px flex space-x-8">
           <button
-            onClick={() => setActiveTab('create')}
+            onClick={() => setActiveTab('import')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'create'
+              activeTab === 'import'
                 ? 'border-indigo-500 text-indigo-600'
                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
             }`}
           >
-            Create Question
+            Import new questions
           </button>
           <button
-            onClick={() => setActiveTab('library')}
+            onClick={() => setActiveTab('manage')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'library'
+              activeTab === 'manage'
                 ? 'border-indigo-500 text-indigo-600'
                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
             }`}
           >
-            Question Library
+            Manage questions
           </button>
         </nav>
       </div>
 
-      {activeTab === 'create' && (
-        <div className="space-y-6">
+      {activeTab === 'import' && (
+        <>
           <Card>
             <CardHeader>
-              <CardTitle>Create New Question</CardTitle>
-              <CardDescription>Build a custom math question with detailed parameters</CardDescription>
+              <CardTitle>{editingId ? 'Edit Question' : 'Add New Question'}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Basic Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="title">Question Title *</Label>
-                  <Input
-                    id="title"
-                    value={questionData.title}
-                    onChange={(e) => handleInputChange('title', e.target.value)}
-                    placeholder="Enter question title..."
-                    className="mt-1"
-                  />
+              <Label className="mb-1 block">Type</Label>
+              <select
+                className="mt-1 w-full border rounded px-3 py-2 text-sm"
+                value={form.type}
+                onChange={e => {
+                  const next = emptyForm(e.target.value)
+                  setForm(next)
+                  try { localStorage.setItem('qb_form_v1', JSON.stringify(next)) } catch {}
+                }}
+              >
+                {TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
                 </div>
                 <div>
-                  <Label>Question Type *</Label>
-                  <Select value={questionType} onValueChange={setQuestionType}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select question type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {questionTypes.map(type => (
-                        <SelectItem key={type} value={type}>
-                          <div className="flex items-center">
-                            {type === 'Multiple Choice' && <List className="h-3 w-3 mr-2" />}
-                            {type === 'Short Answer' && <Type className="h-3 w-3 mr-2" />}
-                            {type === 'True/False' && <ToggleLeft className="h-3 w-3 mr-2" />}
-                            {type === 'Fill in the Blank' && <Calculator className="h-3 w-3 mr-2" />}
-                            {type === 'Essay' && <FileText className="h-3 w-3 mr-2" />}
-                            {type}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label className="mb-1 block">Difficulty</Label>
+                  <select className="mt-1 w-full border rounded px-3 py-2 text-sm" value={form.difficulty} onChange={e => onChange('difficulty', e.target.value)}>
+                    {DIFF.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                  </select>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <Label>Subject *</Label>
-                  <Select value={questionData.subject} onValueChange={(value) => handleInputChange('subject', value)}>
+                  <Label className="mb-1 block">Subject</Label>
+                  <Select value={form.subject} onValueChange={(v) => onChange('subject', v)}>
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Select subject" />
                     </SelectTrigger>
                     <SelectContent>
-                      {subjects.map(subject => (
-                        <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                      {SUBJECTS.map(s => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label>Topic</Label>
-                  <Select 
-                    value={questionData.topic} 
-                    onValueChange={(value) => handleInputChange('topic', value)}
-                    disabled={!questionData.subject}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select topic" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {questionData.subject && topicsBySubject[questionData.subject]?.map(topic => (
-                        <SelectItem key={topic} value={topic}>{topic}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label className="mb-1 block">Grade</Label>
+                  <Input value={form.grade} onChange={e => onChange('grade', e.target.value)} placeholder="e.g., 7" />
                 </div>
-                <div>
-                  <Label>Difficulty *</Label>
-                  <Select value={questionData.difficulty} onValueChange={(value) => handleInputChange('difficulty', value)}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select difficulty" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {difficulties.map(difficulty => (
-                        <SelectItem key={difficulty} value={difficulty}>{difficulty}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="md:col-span-2">
+                  <Label className="mb-1 block">Prompt</Label>
+                  <textarea className="w-full border rounded px-3 py-2 text-sm" rows={2} value={form.prompt} onChange={e => onChange('prompt', e.target.value)} placeholder="Enter the question prompt" />
                 </div>
-              </div>
-
-              {/* Question Content */}
-              <div>
-                <Label htmlFor="questionText">Question Text *</Label>
-                <textarea
-                  id="questionText"
-                  value={questionData.questionText}
-                  onChange={(e) => handleInputChange('questionText', e.target.value)}
-                  placeholder="Enter the question text. You can use LaTeX for mathematical expressions: $x^2 + 2x + 1 = 0$"
-                  className="mt-1 w-full p-3 border border-slate-300 rounded-md resize-none h-24"
-                />
-                <p className="text-xs text-slate-500 mt-1">
-                  Tip: Use LaTeX notation for math expressions. Example: $\\frac{x^2}{2} + 3x - 5 = 0$
-                </p>
-              </div>
-
-              {/* Question Type Specific Fields */}
-              {questionType && renderQuestionTypeForm()}
-
-              {/* Additional Settings */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <Label htmlFor="points">Points</Label>
-                  <Input
-                    id="points"
-                    type="number"
-                    value={questionData.points}
-                    onChange={(e) => handleInputChange('points', parseInt(e.target.value))}
-                    min="1"
-                    max="10"
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="timeLimit">Time Limit (seconds)</Label>
-                  <Input
-                    id="timeLimit"
-                    type="number"
-                    value={questionData.timeLimit}
-                    onChange={(e) => handleInputChange('timeLimit', parseInt(e.target.value))}
-                    min="10"
-                    max="600"
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="tags">Tags (comma-separated)</Label>
-                  <Input
-                    id="tags"
-                    placeholder="algebra, equations, solving"
-                    className="mt-1"
-                  />
-                </div>
-              </div>
-
-              {/* Hints */}
-              <div>
-                <Label className="text-base font-medium">Hints (optional)</Label>
-                <p className="text-sm text-slate-600 mb-3">Provide helpful hints for students</p>
-                <div className="space-y-2">
-                  {questionData.hints.map((hint, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-slate-500 w-12">#{index + 1}</span>
-                      <Input
-                        value={hint}
-                        onChange={(e) => handleHintChange(index, e.target.value)}
-                        placeholder={`Hint ${index + 1}`}
-                        className="flex-1"
-                      />
-                      {questionData.hints.length > 1 && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => removeHint(index)}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      )}
+                {(form.type === 'single' || form.type === 'multiple') && (
+                  <>
+                    <div className="md:col-span-2">
+                      <Label className="mb-1 block">Options (| separated)</Label>
+                      <Input value={form.options} onChange={e => onChange('options', e.target.value)} placeholder="A|B|C|D" />
                     </div>
-                  ))}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={addHint}
-                    className="mt-2"
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Add Hint
-                  </Button>
-                </div>
-              </div>
-
-              {/* Explanation */}
-              <div>
-                <Label htmlFor="explanation">Explanation</Label>
-                <textarea
-                  id="explanation"
-                  value={questionData.explanation}
-                  onChange={(e) => handleInputChange('explanation', e.target.value)}
-                  placeholder="Provide a detailed explanation of the solution..."
-                  className="mt-1 w-full p-3 border border-slate-300 rounded-md resize-none h-24"
-                />
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex space-x-4 pt-4">
-                <Button 
-                  onClick={saveQuestion}
-                  disabled={!questionData.title || !questionType || !questionData.subject || !questionData.difficulty || !questionData.questionText}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <Save className="mr-2 h-4 w-4" />
-                  Save Question
-                </Button>
-                <Button variant="outline">
-                  <Eye className="mr-2 h-4 w-4" />
-                  Preview
-                </Button>
-                <Button variant="outline">
-                  <Copy className="mr-2 h-4 w-4" />
-                  Save as Template
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {activeTab === 'library' && (
-        <div className="space-y-6">
-          {/* Search and Filters */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-                    <Input
-                      placeholder="Search questions by title, subject, or topic..."
-                      className="pl-10"
-                    />
+                    <div className="md:col-span-2">
+                      <Label className="mb-1 block">Correct indices (1-based; , ; |)</Label>
+                      <Input value={form.correct} onChange={e => onChange('correct', e.target.value)} placeholder={form.type === 'single' ? 'e.g., 2' : 'e.g., 1,3'} />
+                    </div>
+                  </>
+                )}
+                {(form.type === 'fill' || form.type === 'short') && (
+                  <div className="md:col-span-2">
+                    <Label className="mb-1 block">Accepted answers (| separated)</Label>
+                    <Input value={form.answers} onChange={e => onChange('answers', e.target.value)} placeholder={form.type === 'fill' ? '3|-3' : 'keywords or rubric'} />
                   </div>
+                )}
+                <div className="md:col-span-2">
+                  <Label className="mb-1 block">Explanation</Label>
+                  <textarea className="w-full border rounded px-3 py-2 text-sm" rows={2} value={form.explanation} onChange={e => onChange('explanation', e.target.value)} placeholder="Explain the correct answer(s)" />
                 </div>
-                <Select>
-                  <SelectTrigger className="w-full sm:w-48">
-                    <SelectValue placeholder="Filter by subject" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Subjects</SelectItem>
-                    {subjects.map(subject => (
-                      <SelectItem key={subject} value={subject}>{subject}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select>
-                  <SelectTrigger className="w-full sm:w-48">
-                    <SelectValue placeholder="Filter by type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    {questionTypes.map(type => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="md:col-span-2">
+                  <Label className="mb-1 block">Tags (comma or |)</Label>
+                  <Input value={form.tags} onChange={e => onChange('tags', e.target.value)} placeholder="algebra,equations" />
+                </div>
+              </div>
+              <div className="mt-4 flex items-center gap-2">
+                <Button onClick={addOrUpdate}>{editingId ? 'Save Changes' : 'Add Question'}</Button>
+                {editingId && <Button variant="outline" onClick={() => { setEditingId(null); setForm(emptyForm('single')) }}>Cancel</Button>}
               </div>
             </CardContent>
           </Card>
 
-          {/* Question Library */}
           <Card>
             <CardHeader>
-              <CardTitle>Question Library</CardTitle>
-              <CardDescription>Manage your created questions</CardDescription>
+              <CardDescription>Import (.json/.csv) data into the builder.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {savedQuestions.map((question) => (
-                  <div key={question.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3">
-                        <h3 className="font-medium">{question.title}</h3>
-                        <Badge variant={question.status === 'published' ? 'default' : 'secondary'}>
-                          {question.status}
-                        </Badge>
-                        <Badge variant="outline">{question.type}</Badge>
-                      </div>
-                      <div className="flex items-center space-x-4 text-sm text-slate-600 mt-1">
-                        <span className="flex items-center">
-                          <BookOpen className="h-3 w-3 mr-1" />
-                          {question.subject} - {question.topic}
-                        </span>
-                        <span className="flex items-center">
-                          <Target className="h-3 w-3 mr-1" />
-                          {question.difficulty}
-                        </span>
-                        <span className="flex items-center">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          {question.points} pts
-                        </span>
-                        <span>Created: {question.created}</span>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button size="sm" variant="outline">
-                        <Eye className="h-3 w-3" />
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+              <div className="flex flex-wrap gap-2 items-center">
+                <label className="inline-flex items-center gap-2 text-sm px-3 py-2 border rounded cursor-pointer">
+                  <span>Import (.json/.csv)</span>
+                  <input type="file" ref={fileRef} accept=".json,.csv,.tsv,application/json,text/csv" onChange={onImportFile} className="hidden" />
+                </label>
+                <label className="ml-2 inline-flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={replaceMode} onChange={e => { setReplaceMode(e.target.checked); try { localStorage.setItem('qb_replace_v1', String(e.target.checked)) } catch {} }} />
+                  Replace existing on import
+                </label>
               </div>
             </CardContent>
           </Card>
-        </div>
+        </>
+      )}
+
+      {activeTab === 'manage' && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Manage Questions ({questions.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap items-end gap-3 mb-4">
+                <div className="min-w-[200px]">
+                  <Label className="mb-1 block text-xs">Subject</Label>
+                  <select className="mt-1 w-full border rounded px-3 py-2 text-sm" value={filterSubject} onChange={(e) => setFilterSubject(e.target.value)}>
+                    <option value="">All subjects</option>
+                    {subjectsForFilter.map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="min-w-[200px]">
+                  <Label className="mb-1 block text-xs">Difficulty</Label>
+                  <select className="mt-1 w-full border rounded px-3 py-2 text-sm" value={filterDifficulty} onChange={(e) => setFilterDifficulty(e.target.value)}>
+                    <option value="">All levels</option>
+                    {DIFF.map(d => (
+                      <option key={d.value} value={d.value}>{d.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="pt-6">
+                  <Button variant="outline" onClick={() => { setFilterSubject(''); setFilterDifficulty('') }}>Reset</Button>
+                </div>
+                <div className="pt-6 text-sm text-slate-500">Filtered: {filteredQuestions.length}</div>
+              </div>
+              {questions.length === 0 && (
+                <div className="text-sm text-slate-600">No questions yet. Import via CSV/JSON in the Import tab.</div>
+              )}
+              <ul className="space-y-3">
+                {filteredQuestions.map((q, idx) => (
+                  <li key={q.id} className="border rounded p-3 bg-white">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="text-sm text-slate-500">#{idx + 1} - {q.type} - {q.metadata?.subject || '-'} - {q.metadata?.difficulty || 'easy'}</div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => onEdit(q)}>Edit</Button>
+                        <Button variant="outline" size="sm" onClick={() => onDelete(q.id)}>Delete</Button>
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <div className="font-medium mb-1">{q.prompt}</div>
+                      {(q.type === 'single' || q.type === 'multiple') && (
+                        <ol className="list-decimal ml-5 space-y-1">
+                          {q.options.map((o) => (
+                            <li key={o.id} className={o.correct ? 'font-semibold text-green-700' : ''}>
+                              {o.text} {o.correct && <span className="ml-2 text-xs border rounded-full px-2 py-0.5">correct</span>}
+                            </li>
+                          ))}
+                        </ol>
+                      )}
+                      {(q.type === 'fill' || q.type === 'short') && q.answers?.length > 0 && (
+                        <div className="text-sm text-slate-700 mt-1">Accepted: {q.answers.join(' | ')}</div>
+                      )}
+                      {q.metadata?.tags?.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {q.metadata.tags.map((t, i) => <span key={i} className="text-xs border rounded-full px-2 py-0.5 bg-slate-50">{t}</span>)}
+                        </div>
+                      )}
+                      {q.explanation && (
+                        <div className="mt-2 text-sm text-slate-700"><span className="font-medium">Explanation:</span> {q.explanation}</div>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
       )}
     </div>
   )
 }
 
-export default QuestionBuilder
+
+
+
+
+
+
+
 
