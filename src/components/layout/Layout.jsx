@@ -21,6 +21,7 @@ const Layout = ({ children, user }) => {
   const location = useLocation()
 
   const navigation = [
+    { name: 'Home', href: '/home', icon: BookOpen },
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
     { name: 'Practice', href: '/practice', icon: BookOpen },
     { name: 'Exam Builder', href: '/exam-builder', icon: FileText },
