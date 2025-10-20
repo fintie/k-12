@@ -28,7 +28,7 @@ function App() {
   })
 
   return (
-    <Router>
+    <Router basename="/k-12">
       <div className="min-h-screen bg-slate-50">
         <Layout user={user}>
           <Routes>
