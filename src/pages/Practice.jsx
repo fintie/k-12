@@ -123,6 +123,11 @@ const Practice = () => {
     calculus: 'Calculus',
   }
 
+  // Helper: map slider value to canonical difficulty key (hoisted function avoids TDZ issues)
+  function getDiffKey(val) {
+    return val <= 40 ? 'easy' : (val <= 80 ? 'moderate' : 'advanced')
+  }
+
   const getBasePool = (bank, wantedSubject, diffKey) => {
     const pool = bank.filter(q => (q?.metadata?.subject || '') === wantedSubject && (q?.metadata?.difficulty || '') === diffKey)
     if (pool.length > 0) return pool
@@ -336,7 +341,7 @@ const Practice = () => {
   const diffInfo = getDifficultyInfo(difficulty[0])
 
   // Map difficulty key to color utility for stable tag rendering
-  const diffKeyToColor = (key) => {
+  function diffKeyToColor(key) {
     switch (key) {
       case 'easy': return 'bg-green-500'
       case 'moderate': return 'bg-orange-500'
@@ -346,7 +351,7 @@ const Practice = () => {
   }
 
   // Helper: map slider value to canonical difficulty key
-  const getDiffKey = (val) => (val <= 40 ? 'easy' : (val <= 80 ? 'moderate' : 'advanced'))
+  
 
   const sessionInProgress = !ended && (isActive || !!currentQuestion || sessionStats.total > 0)
 
