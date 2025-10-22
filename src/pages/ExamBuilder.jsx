@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -7,13 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import { loadQuestionsFromStorage } from '@/utils/qb-utils'
 import { 
-  FileText, 
-  Plus, 
-  Settings, 
-  Eye, 
+  Eye,
   Clock,
-  Users,
   BookOpen,
   Target,
   CheckCircle,
@@ -26,9 +23,14 @@ import {
 } from 'lucide-react'
 
 const ExamBuilder = () => {
-  const [activeTab, setActiveTab] = useState('create')
-  const [currentStep, setCurrentStep] = useState(1)
-  const [examData, setExamData] = useState({
+  const LS = {
+    tab: 'exam_builder_tab_v1',
+    step: 'exam_builder_step_v1',
+    data: 'exam_builder_data_v1',
+    saved: 'exam_builder_saved_v1',
+  }
+
+  const defaultExamData = {
     title: '',
     description: '',
     subject: '',
@@ -40,38 +42,71 @@ const ExamBuilder = () => {
     instructions: '',
     allowRetakes: false,
     showResults: true,
-    randomizeQuestions: true
+    randomizeQuestions: true,
+    selectedQuestionIds: []
+  }
+
+  const [activeTab, setActiveTab] = useState(() => {
+    try { return localStorage.getItem(LS.tab) || 'create' } catch { return 'create' }
+  })
+  const [currentStep, setCurrentStep] = useState(() => {
+    try { const v = parseInt(localStorage.getItem(LS.step) || '1', 10); return (v >=1 && v <=5) ? v : 1 } catch { return 1 }
+  })
+  const [examData, setExamData] = useState(() => {
+    try {
+      const raw = localStorage.getItem(LS.data)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        return { ...defaultExamData, ...parsed }
+      }
+    } catch {}
+    return { ...defaultExamData }
   })
 
-  const [savedExams, setSavedExams] = useState([
-    {
-      id: 1,
-      title: 'Algebra Midterm Review',
-      subject: 'Algebra',
-      questions: 15,
-      timeLimit: 45,
-      created: '2024-01-15',
-      status: 'draft'
-    },
-    {
-      id: 2,
-      title: 'Geometry Basics Quiz',
-      subject: 'Geometry',
-      questions: 10,
-      timeLimit: 30,
-      created: '2024-01-10',
-      status: 'published'
-    },
-    {
-      id: 3,
-      title: 'Statistics Final Prep',
-      subject: 'Statistics',
-      questions: 20,
-      timeLimit: 60,
-      created: '2024-01-08',
-      status: 'draft'
-    }
-  ])
+  const [bankQuestions, setBankQuestions] = useState([])
+
+  useEffect(() => {
+    setBankQuestions(loadQuestionsFromStorage())
+  }, [])
+
+  const [savedExams, setSavedExams] = useState(() => {
+    try {
+      const raw = localStorage.getItem(LS.saved)
+      if (raw) {
+        const list = JSON.parse(raw)
+        if (Array.isArray(list)) return list
+      }
+    } catch {}
+    return [
+      {
+        id: 1,
+        title: 'Algebra Midterm Review',
+        subject: 'Algebra',
+        questions: 15,
+        timeLimit: 45,
+        created: '2024-01-15',
+        status: 'draft'
+      },
+      {
+        id: 2,
+        title: 'Geometry Basics Quiz',
+        subject: 'Geometry',
+        questions: 10,
+        timeLimit: 30,
+        created: '2024-01-10',
+        status: 'published'
+      },
+      {
+        id: 3,
+        title: 'Statistics Final Prep',
+        subject: 'Statistics',
+        questions: 20,
+        timeLimit: 60,
+        created: '2024-01-08',
+        status: 'draft'
+      }
+    ]
+  })
 
   const subjects = ['Algebra', 'Geometry', 'Statistics', 'Calculus', 'Pre-Algebra', 'Trigonometry']
   const difficulties = ['Easy (0-40)', 'Moderate (40-80)', 'Advanced (80-100)']
@@ -89,6 +124,12 @@ const ExamBuilder = () => {
       default: return []
     }
   }
+
+  // Persist core states so switching pages doesn't lose progress
+  useEffect(() => { try { localStorage.setItem(LS.tab, activeTab) } catch {} }, [activeTab])
+  useEffect(() => { try { localStorage.setItem(LS.step, String(currentStep)) } catch {} }, [currentStep])
+  useEffect(() => { try { localStorage.setItem(LS.data, JSON.stringify(examData)) } catch {} }, [examData])
+  useEffect(() => { try { localStorage.setItem(LS.saved, JSON.stringify(savedExams)) } catch {} }, [savedExams])
 
   const steps = [
     { id: 1, title: 'Basic Info', description: 'Exam title and description' },
@@ -124,28 +165,17 @@ const ExamBuilder = () => {
       id: savedExams.length + 1,
       title: examData.title,
       subject: examData.subject,
-      questions: examData.totalQuestions,
+      questions: (examData.selectedQuestionIds?.length || 0) || examData.totalQuestions,
       timeLimit: examData.timeLimit,
       created: new Date().toISOString().split('T')[0],
       status: 'draft'
     }
     setSavedExams([...savedExams, newExam])
     // Reset form
-    setExamData({
-      title: '',
-      description: '',
-      subject: '',
-      difficulty: '',
-      timeLimit: 60,
-      totalQuestions: 10,
-      questionTypes: [],
-      topics: [],
-      instructions: '',
-      allowRetakes: false,
-      showResults: true,
-      randomizeQuestions: true
-    })
+    const cleared = { ...defaultExamData }
+    setExamData(cleared)
     setCurrentStep(1)
+    try { localStorage.setItem(LS.data, JSON.stringify(cleared)); localStorage.setItem(LS.step, '1') } catch {}
   }
 
   const renderStepContent = () => {
@@ -284,6 +314,22 @@ const ExamBuilder = () => {
                 </div>
               </div>
             )}
+
+            {/* Shared question bank selection */}
+            <div>
+              <Label className="text-base font-medium">Select Questions from Question Builder</Label>
+              <p className="text-sm text-slate-600 mb-3">Choose from your saved questions. Filters use your selections in Step 2.</p>
+
+              {bankQuestions.length === 0 ? (
+                <div className="text-sm text-slate-600">No questions found. Add some in Question Builder.</div>
+              ) : (
+                <QuestionBankPicker
+                  bankQuestions={bankQuestions}
+                  examData={examData}
+                  setExamData={setExamData}
+                />
+              )}
+            </div>
           </div>
         )
 
@@ -340,7 +386,7 @@ const ExamBuilder = () => {
                 <div><strong>Subject:</strong> {examData.subject}</div>
                 <div><strong>Difficulty:</strong> {examData.difficulty}</div>
                 <div><strong>Time Limit:</strong> {examData.timeLimit} minutes</div>
-                <div><strong>Total Questions:</strong> {examData.totalQuestions}</div>
+                <div><strong>Total Questions:</strong> {examData.totalQuestions} {examData.selectedQuestionIds?.length ? `(Selected: ${examData.selectedQuestionIds.length})` : ''}</div>
                 <div><strong>Question Types:</strong> {examData.questionTypes.join(', ')}</div>
                 <div><strong>Topics:</strong> {examData.topics.join(', ')}</div>
                 <div><strong>Allow Retakes:</strong> {examData.allowRetakes ? 'Yes' : 'No'}</div>
@@ -513,4 +559,76 @@ const ExamBuilder = () => {
 }
 
 export default ExamBuilder
+
+// Inline helper: pick and filter from shared question bank
+function QuestionBankPicker({ bankQuestions, examData, setExamData }) {
+  const toDiffKey = (label) => {
+    if (!label) return ''
+    const s = String(label).toLowerCase()
+    if (s.startsWith('easy')) return 'easy'
+    if (s.startsWith('moderate')) return 'moderate'
+    if (s.startsWith('advanced')) return 'advanced'
+    return ''
+  }
+
+  const filtered = useMemo(() => {
+    const diffKey = toDiffKey(examData.difficulty)
+    return bankQuestions.filter(q => {
+      const subjectOk = !examData.subject || (q?.metadata?.subject || '') === examData.subject
+      const diffOk = !diffKey || (q?.metadata?.difficulty || '') === diffKey
+      return subjectOk && diffOk
+    })
+  }, [bankQuestions, examData.subject, examData.difficulty])
+
+  const selectedSet = useMemo(() => new Set(examData.selectedQuestionIds || []), [examData.selectedQuestionIds])
+
+  const toggleId = (id) => {
+    setExamData(prev => {
+      const cur = new Set(prev.selectedQuestionIds || [])
+      if (cur.has(id)) cur.delete(id); else cur.add(id)
+      return { ...prev, selectedQuestionIds: Array.from(cur) }
+    })
+  }
+
+  const autoFill = () => {
+    const remainingSlots = Math.max(0, (examData.totalQuestions || 0) - (examData.selectedQuestionIds?.length || 0))
+    if (remainingSlots === 0) return
+    const pool = filtered.filter(q => !selectedSet.has(q.id))
+    const shuffled = [...pool].sort(() => Math.random() - 0.5)
+    const pick = shuffled.slice(0, remainingSlots).map(q => q.id)
+    setExamData(prev => ({ ...prev, selectedQuestionIds: [...(prev.selectedQuestionIds || []), ...pick] }))
+  }
+
+  return (
+    <div className="mt-2 border rounded-lg p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3 text-sm">
+        <div>Available: {filtered.length} • Selected: {examData.selectedQuestionIds?.length || 0}</div>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setExamData(prev => ({ ...prev, selectedQuestionIds: [] }))}>Clear</Button>
+          <Button size="sm" onClick={autoFill}>Auto-fill</Button>
+        </div>
+      </div>
+      {filtered.length === 0 ? (
+        <div className="text-sm text-slate-600">No matching questions. Adjust subject/difficulty in Step 2.</div>
+      ) : (
+        <ul className="space-y-2 max-h-80 overflow-auto">
+          {filtered.map((q, idx) => (
+            <li key={q.id} className="flex items-start gap-3 p-2 border rounded">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={selectedSet.has(q.id)}
+                onChange={() => toggleId(q.id)}
+              />
+              <div className="flex-1">
+                <div className="text-sm font-medium">{idx + 1}. {q.prompt}</div>
+                <div className="text-xs text-slate-500 mt-1">{q.type} • {q.metadata?.subject || '-'} • {q.metadata?.difficulty || 'easy'}</div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
 

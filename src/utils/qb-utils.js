@@ -1,5 +1,6 @@
-// Minimal utilities used by QuestionBuilder
+// Minimal utilities used by QuestionBuilder and shared question bank
 // Exports: normalize, parseCSV, safeSplit, toQuestionFromCSVRow, downloadFile, todayISO
+// New: QB_STORAGE_KEY, loadQuestionsFromStorage, saveQuestionsToStorage
 
 function uid(prefix = '') {
   const s = Math.random().toString(36).slice(2, 8)
@@ -186,4 +187,29 @@ export function todayISO() {
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
+}
+
+// Shared Question Bank helpers (localStorage-backed)
+export const QB_STORAGE_KEY = 'qb_questions_v1'
+
+export function loadQuestionsFromStorage() {
+  try {
+    const raw = localStorage.getItem(QB_STORAGE_KEY)
+    if (!raw) return []
+    const arr = JSON.parse(raw)
+    if (!Array.isArray(arr)) return []
+    return arr.map(item => normalize(item))
+  } catch {
+    return []
+  }
+}
+
+export function saveQuestionsToStorage(list = []) {
+  try {
+    const norm = Array.isArray(list) ? list.map(item => normalize(item)) : []
+    localStorage.setItem(QB_STORAGE_KEY, JSON.stringify(norm))
+    return true
+  } catch {
+    return false
+  }
 }

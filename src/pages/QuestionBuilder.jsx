@@ -144,7 +144,9 @@ function addOrUpdate() {
   }
 
   function onEdit(q) {
+    // Enter edit mode and jump to the Add Question tab
     setEditingId(q.id)
+    setActiveTab('import')
     const type = q.type
     const options = Array.isArray(q.options) ? q.options.map(o => o.text).join('|') : ''
     const correct = Array.isArray(q.options) ? q.options.flatMap((o, idx) => o.correct ? [String(idx + 1)] : []).join(',') : ''
@@ -162,6 +164,11 @@ function addOrUpdate() {
       difficulty: q.metadata?.difficulty || 'easy',
       tags,
     })
+    // Ensure the form is visible to the user
+    try { localStorage.setItem('qb_tab_v1', 'import') } catch {}
+    setTimeout(() => {
+      try { window.scrollTo({ top: 0, behavior: 'smooth' }) } catch {}
+    }, 0)
   }
 
   function onDelete(id) {
