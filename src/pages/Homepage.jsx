@@ -17,7 +17,7 @@ const Homepage = () => {
               <a href="#features" className="text-gray-600 hover:text-gray-900">Core Features</a>
               <a href="#pricing" className="text-gray-600 hover:text-gray-900">Pricing</a>
               <a href="#tutors" className="text-gray-600 hover:text-gray-900">Our Tutors</a>
-              <a href="/dashboard" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+              <a href="#pricing" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
                 Start Learning
               </a>
             </nav>
