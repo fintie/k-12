@@ -95,7 +95,7 @@ const Homepage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-white rounded-lg shadow-lg p-8">
               <h3 className="text-2xl font-bold text-gray-900 mb-4">Basic Plan</h3>
-              <p className="text-4xl font-bold text-blue-600 mb-6">¥XXXX<span className="text-lg text-gray-500">/month</span></p>
+              <p className="text-4xl font-bold text-blue-600 mb-6">$10<span className="text-lg text-gray-500">/month</span></p>
               <ul className="text-gray-600 space-y-3 mb-8">
                 <li>• 20 sessions/month</li>
                 <li>• Students needing foundation building</li>
@@ -111,7 +111,7 @@ const Homepage = () => {
                 Most Popular
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">Advanced Plan</h3>
-              <p className="text-4xl font-bold text-blue-600 mb-6">¥XXXX<span className="text-lg text-gray-500">/month</span></p>
+              <p className="text-4xl font-bold text-blue-600 mb-6">$30<span className="text-lg text-gray-500">/month</span></p>
               <ul className="text-gray-600 space-y-3 mb-8">
                 <li>• 30 sessions/month</li>
                 <li>• Students seeking breakthroughs</li>
@@ -125,7 +125,7 @@ const Homepage = () => {
             </div>
             <div className="bg-white rounded-lg shadow-lg p-8">
               <h3 className="text-2xl font-bold text-gray-900 mb-4">VIP One-on-One</h3>
-              <p className="text-4xl font-bold text-blue-600 mb-6">¥XXXX<span className="text-lg text-gray-500">/session</span></p>
+              <p className="text-4xl font-bold text-blue-600 mb-6">$50<span className="text-lg text-gray-500">/session</span></p>
               <ul className="text-gray-600 space-y-3 mb-8">
                 <li>• Customized session schedule</li>
                 <li>• Personalized deep tutoring</li>
@@ -272,7 +272,7 @@ const Homepage = () => {
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-gray-400">© 2024 MathTutor Pro. All rights reserved.</p>
+          <p className="text-gray-400">© 2025 MathTutor Pro. All rights reserved.</p>
         </div>
       </footer>
     </div>
