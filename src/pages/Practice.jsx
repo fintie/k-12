@@ -7,6 +7,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { cn } from '@/lib/utils'
 import { loadQuestionsFromStorage } from '@/utils/qb-utils'
 import { 
   Play, 
@@ -18,6 +20,14 @@ import {
   Target,
   TrendingUp
 } from 'lucide-react'
+
+const describeOption = (opt) => {
+  if (!opt) return ''
+  if (opt.text) return opt.text
+  if (opt.label) return `Option ${opt.label}`
+  if (opt.image) return 'Image option'
+  return ''
+}
 
 const Practice = () => {
   const LS = { key: 'practice_state_v1' }
@@ -88,6 +98,7 @@ const Practice = () => {
   const [lastTickAt, setLastTickAt] = useState(initial.lastTickAt) // epoch ms, for resume after navigation
   const [history, setHistory] = useState(initial.history)    // answered question records
   const [exhaustedMap, setExhaustedMap] = useState(initial.exhaustedMap)
+  const [previewImage, setPreviewImage] = useState(null)     // { src, alt } for modal preview
 
   const subjects = [
     { id: 'algebra', name: 'Algebra', color: 'bg-blue-500' },
@@ -175,8 +186,17 @@ const Practice = () => {
     setCurrentQuestion({
       id: q.id,
       question: q.prompt,
+      questionImage: q.questionImage || '',
+      promptImage: q.promptImage || '',
       type: q.type,
-      options: mc ? q.options.map(o => ({ id: o.id, text: o.text })) : [],
+      options: mc
+        ? q.options.map(o => ({
+            id: o.id,
+            text: o.text,
+            image: o.image || '',
+            label: o.label || '',
+          }))
+        : [],
       correctOptionIds: correctIds,
       answers: Array.isArray(q.answers) ? q.answers : [],
       explanation: q.explanation || '',
@@ -232,6 +252,8 @@ const Practice = () => {
         diffKey: currentQuestion.diffKey,
         type: currentQuestion.type,
         prompt: currentQuestion.question,
+        questionImage: currentQuestion.questionImage || '',
+        promptImage: currentQuestion.promptImage || '',
         options: currentQuestion.options,
         correctOptionIds: currentQuestion.correctOptionIds,
         answers: currentQuestion.answers,
@@ -355,6 +377,48 @@ const Practice = () => {
 
   const sessionInProgress = !ended && (isActive || !!currentQuestion || sessionStats.total > 0)
 
+  const renderPreviewableImage = (src, alt, options = {}) => {
+    if (!src) return null
+    const {
+      containerClassName = '',
+      imgClassName = '',
+      suppressSelection = false,
+    } = options
+
+    const handleClick = (event) => {
+      if (suppressSelection) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+      setPreviewImage({ src, alt })
+    }
+
+    return (
+      <button
+        type="button"
+        onClick={handleClick}
+        aria-label={alt ? `View larger – ${alt}` : 'View larger image'}
+        title="View larger"
+        className={cn(
+          "group relative flex w-full cursor-zoom-in overflow-hidden rounded border bg-white p-0 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 md:w-auto",
+          containerClassName
+        )}
+      >
+        <img
+          src={src}
+          alt={alt}
+          className={cn(
+            "max-h-64 w-full object-contain p-2 pointer-events-none md:w-auto",
+            imgClassName
+          )}
+        />
+        <span className="pointer-events-none absolute bottom-2 right-2 rounded bg-slate-900/70 px-2 py-1 text-xs font-medium uppercase tracking-wide text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+          View larger
+        </span>
+      </button>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -469,8 +533,18 @@ const Practice = () => {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="text-lg font-medium text-slate-900">
-              {currentQuestion.question}
+            <div className="space-y-4">
+              {currentQuestion.questionImage && (
+                renderPreviewableImage(currentQuestion.questionImage, 'Question reference')
+              )}
+              {currentQuestion.promptImage && (
+                renderPreviewableImage(currentQuestion.promptImage, 'Question prompt visual')
+              )}
+              {currentQuestion.question && (
+                <div className="text-lg font-medium text-slate-900">
+                  {currentQuestion.question}
+                </div>
+              )}
             </div>
 
             {/* Answer Input */}
@@ -489,21 +563,36 @@ const Practice = () => {
                   </div>
                 ) : currentQuestion.type === 'single' ? (
                   <RadioGroup value={selectedOption} onValueChange={setSelectedOption}>
-                    {currentQuestion.options.map((option, index) => (
-                      <div key={index} className="flex items-center space-x-2">
-                        <RadioGroupItem value={option.id} id={`option-${index}`} />
-                        <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer">
-                          {option.text}
-                        </Label>
-                      </div>
-                    ))}
+                    {currentQuestion.options.map((option, index) => {
+                      const optionAlt = option.label ? `Option ${option.label}` : `Option ${index + 1}`
+                      return (
+                        <div key={option.id || index} className="flex items-start gap-3">
+                          <RadioGroupItem value={option.id} id={`option-${index}`} />
+                          <div className="flex flex-1 flex-col gap-2">
+                            {option.image && (
+                              <div>
+                                {renderPreviewableImage(option.image, optionAlt, {
+                                  containerClassName: 'max-w-full md:w-auto',
+                                  imgClassName: 'max-h-48 w-full object-contain p-2 pointer-events-none md:w-auto',
+                                  suppressSelection: true,
+                                })}
+                              </div>
+                            )}
+                            <Label htmlFor={`option-${index}`} className="cursor-pointer text-sm text-slate-900">
+                              {option.label ? `${option.label}. ` : ''}
+                              {option.text || (option.image ? 'Image option' : '')}
+                            </Label>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </RadioGroup>
                 ) : (
                   <div className="space-y-2">
                     {currentQuestion.options.map((option, index) => {
                       const checked = selectedOptions.includes(option.id)
                       return (
-                        <div key={index} className="flex items-center space-x-2">
+                        <div key={option.id || index} className="flex items-start gap-3">
                           <Checkbox
                             id={`mopt-${index}`}
                             checked={checked}
@@ -515,7 +604,21 @@ const Practice = () => {
                               })
                             }}
                           />
-                          <Label htmlFor={`mopt-${index}`} className="flex-1 cursor-pointer">{option.text}</Label>
+                          <div className="flex flex-1 flex-col gap-2">
+                            {option.image && (
+                              <div>
+                                {renderPreviewableImage(option.image, option.label ? `Option ${option.label}` : `Option ${index + 1}`, {
+                                  containerClassName: 'max-w-full md:w-auto',
+                                  imgClassName: 'max-h-48 w-full object-contain p-2 pointer-events-none md:w-auto',
+                                  suppressSelection: true,
+                                })}
+                              </div>
+                            )}
+                            <Label htmlFor={`mopt-${index}`} className="cursor-pointer text-sm text-slate-900">
+                              {option.label ? `${option.label}. ` : ''}
+                              {option.text || (option.image ? 'Image option' : '')}
+                            </Label>
+                          </div>
                         </div>
                       )
                     })}
@@ -537,43 +640,58 @@ const Practice = () => {
             )}
 
             {/* Result Display */}
-            {showResult && (
-              <div className={`p-4 rounded-lg border-2 ${
-                isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-              }`}>
-                <div className="flex items-center space-x-2 mb-3">
-                  {isCorrect ? (
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                  ) : (
-                    <XCircle className="h-5 w-5 text-red-600" />
-                  )}
-                  <span className={`font-medium ${
-                    isCorrect ? 'text-green-800' : 'text-red-800'
-                  }`}>
-                    {isCorrect ? 'Correct!' : 'Incorrect'}
-                  </span>
-                </div>
-                
-                <div className="space-y-2">
-                  <p className="text-sm">
-                    <strong>Correct Answer:</strong> {
-                      currentQuestion.type === 'single' || currentQuestion.type === 'multiple'
-                        ? currentQuestion.options.filter(o => (currentQuestion.correctOptionIds || []).includes(o.id)).map(o => o.text).join(' | ')
-                        : (currentQuestion.answers || []).join(' | ')
-                    }
-                  </p>
-                  <div className="flex items-start space-x-2">
-                    <Lightbulb className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-slate-700">{currentQuestion.explanation}</p>
-                  </div>
-                </div>
+            {showResult && (() => {
+              const isMC = currentQuestion.type === 'single' || currentQuestion.type === 'multiple'
+              const correctOptions = isMC
+                ? currentQuestion.options.filter(o => (currentQuestion.correctOptionIds || []).includes(o.id))
+                : []
+              const correctAnswerText = isMC
+                ? correctOptions.map(describeOption).filter(Boolean).join(' | ') || (correctOptions.some(o => o.image) ? 'See images below' : '-')
+                : (currentQuestion.answers || []).join(' | ')
+              const correctOptionImages = isMC ? correctOptions.filter(o => o.image) : []
 
-                <Button onClick={nextQuestion} className="w-full mt-4">
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Next Question
-                </Button>
-              </div>
-            )}
+              return (
+                <div className={`p-4 rounded-lg border-2 ${isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                  <div className="flex items-center space-x-2 mb-3">
+                    {isCorrect ? (
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                    ) : (
+                      <XCircle className="h-5 w-5 text-red-600" />
+                    )}
+                    <span className={`font-medium ${isCorrect ? 'text-green-800' : 'text-red-800'}`}>
+                      {isCorrect ? 'Correct!' : 'Incorrect'}
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <p className="text-sm">
+                      <strong>Correct Answer:</strong> {correctAnswerText || '-'}
+                    </p>
+                    {isMC && correctOptionImages.length > 0 && (
+                      <div className="flex flex-wrap gap-3">
+                        {correctOptionImages.map(opt => (
+                          <div key={opt.id}>
+                            {renderPreviewableImage(opt.image, opt.label ? `Option ${opt.label}` : 'Correct option image', {
+                              containerClassName: 'max-w-xs sm:max-w-sm md:w-auto',
+                              imgClassName: 'max-h-36 w-auto object-contain p-2 pointer-events-none',
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex items-start space-x-2">
+                      <Lightbulb className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                      <p className="text-sm text-slate-700">{currentQuestion.explanation}</p>
+                    </div>
+                  </div>
+
+                  <Button onClick={nextQuestion} className="w-full mt-4">
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Next Question
+                  </Button>
+                </div>
+              )
+            })()}
           </CardContent>
         </Card>
       )}
@@ -609,22 +727,51 @@ const Practice = () => {
               {history.map((h, idx) => {
                 const isMC = h.type === 'single' || h.type === 'multiple'
                 const correctTexts = isMC
-                  ? h.options.filter(o => (h.correctOptionIds || []).includes(o.id)).map(o => o.text)
+                  ? h.options.filter(o => (h.correctOptionIds || []).includes(o.id)).map(describeOption)
                   : (h.answers || [])
                 const userTexts = isMC
-                  ? h.options.filter(o => (h.userAnswer || []).includes(o.id)).map(o => o.text)
+                  ? h.options.filter(o => (h.userAnswer || []).includes(o.id)).map(describeOption)
                   : (h.userAnswer || [])
                 return (
                   <li key={idx} className="border rounded p-3">
                     <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-                      <div>#{idx + 1} • {h.type} • {h.subject}</div>
+                      <div>#{idx + 1} · {h.type} · {h.subject}</div>
                       <div>{formatTime(h.timeTaken || 0)}</div>
                     </div>
-                    <div className="font-medium mb-2">{h.prompt}</div>
+                    {(h.questionImage || h.promptImage) && (
+                      <div className="flex flex-wrap gap-4 mb-2">
+                        {h.questionImage && (
+                          renderPreviewableImage(h.questionImage, 'Question reference', {
+                            containerClassName: 'max-w-full sm:max-w-sm md:w-auto',
+                            imgClassName: 'max-h-40 w-full object-contain p-2 pointer-events-none md:w-auto',
+                            suppressSelection: true,
+                          })
+                        )}
+                        {h.promptImage && (
+                          renderPreviewableImage(h.promptImage, 'Question prompt visual', {
+                            containerClassName: 'max-w-full sm:max-w-sm md:w-auto',
+                            imgClassName: 'max-h-40 w-full object-contain p-2 pointer-events-none md:w-auto',
+                            suppressSelection: true,
+                          })
+                        )}
+                      </div>
+                    )}
+                    {h.prompt && <div className="font-medium mb-2">{h.prompt}</div>}
                     {isMC && (
                       <ol className="list-decimal ml-5 text-sm space-y-1">
                         {h.options.map(o => (
-                          <li key={o.id} className={h.correctOptionIds?.includes(o.id) ? 'text-green-700 font-medium' : ''}>{o.text}</li>
+                          <li key={o.id} className={h.correctOptionIds?.includes(o.id) ? 'text-green-700 font-medium' : ''}>
+                            <div className="flex flex-col gap-1">
+                              {o.image && (
+                                renderPreviewableImage(o.image, o.label ? `Option ${o.label}` : 'Option image', {
+                                  containerClassName: 'max-w-xs sm:max-w-sm md:w-auto',
+                                  imgClassName: 'max-h-32 w-auto object-contain p-2 pointer-events-none',
+                                  suppressSelection: true,
+                                })
+                              )}
+                              <span>{describeOption(o)}</span>
+                            </div>
+                          </li>
                         ))}
                       </ol>
                     )}
@@ -690,6 +837,21 @@ const Practice = () => {
           </Card>
         </div>
       )}
+
+      <Dialog open={!!previewImage} onOpenChange={(open) => { if (!open) setPreviewImage(null) }}>
+        <DialogContent className="sm:max-w-4xl p-2">
+          <DialogTitle className="sr-only">{previewImage?.alt || 'Image preview'}</DialogTitle>
+          {previewImage && (
+            <div className="flex max-h-[80vh] items-center justify-center overflow-hidden rounded bg-slate-100">
+              <img
+                src={previewImage.src}
+                alt={previewImage.alt}
+                className="h-full w-full max-h-[80vh] object-contain"
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

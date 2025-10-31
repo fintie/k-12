@@ -12,9 +12,67 @@ const ALLOWED_TYPES = new Set(['single', 'multiple', 'fill', 'short'])
 // Canonical difficulties now use: easy | moderate | advanced
 const ALLOWED_DIFFICULTY = new Set(['easy', 'moderate', 'advanced'])
 
+function cleanString(value) {
+  if (value === undefined || value === null) return ''
+  return String(value).trim()
+}
+
+function normalizeMediaPath(value) {
+  const str = cleanString(value)
+  if (!str) return ''
+  if (str.startsWith('data:')) return str
+  return str.replace(/\\/g, '/')
+}
+
+function extractImageSource(value) {
+  const str = cleanString(value)
+  if (!str) return ''
+  const dataIdx = str.indexOf('data:')
+  if (dataIdx >= 0) return str.slice(dataIdx)
+  return normalizeMediaPath(str)
+}
+function splitLabelAndImage(segment) {
+  const trimmed = cleanString(segment)
+  if (!trimmed) return { label: '', image: '' }
+
+  const dataIdx = trimmed.indexOf('data:')
+  if (dataIdx >= 0) {
+    const before = trimmed.slice(0, dataIdx)
+    const labelMatch = before.match(/([A-Za-z]{1,3})\s*$/)
+    const label = labelMatch ? labelMatch[1].toUpperCase() : ''
+    const image = trimmed.slice(dataIdx)
+    return { label, image }
+  }
+
+  const separatorIndex = Math.max(trimmed.indexOf(':'), trimmed.indexOf('='))
+  if (separatorIndex > 0) {
+    const labelCandidate = trimmed.slice(0, separatorIndex).trim()
+    const remainder = trimmed.slice(separatorIndex + 1).trim()
+    if (/^[A-Za-z]{1,3}$/.test(labelCandidate)) {
+      return { label: labelCandidate.toUpperCase(), image: remainder }
+    }
+  }
+
+  return { label: '', image: trimmed }
+}
+
+
+function optionLabelForIndex(index) {
+  let n = index
+  let label = ''
+  while (n >= 0) {
+    label = String.fromCharCode((n % 26) + 65) + label
+    n = Math.floor(n / 26) - 1
+  }
+  return label || 'A'
+}
+
 export function normalize(raw = {}) {
   const type = ('' + (raw.type || 'single')).toLowerCase().trim()
   const qType = ALLOWED_TYPES.has(type) ? type : 'single'
+
+  const promptImage = normalizeMediaPath(raw.promptImage ?? raw.prompt_image ?? raw.stemImage ?? raw.stem_image)
+  const questionImage = normalizeMediaPath(raw.questionImage ?? raw.question_image ?? '')
 
   const base = {
     id: raw.id || uid('q'),
@@ -33,34 +91,155 @@ export function normalize(raw = {}) {
       })(),
       tags: normalizeTags(raw.metadata?.tags ?? raw.tags ?? []),
     },
+    promptImage,
+    questionImage,
   }
 
   if (qType === 'single' || qType === 'multiple') {
-    const optIn = raw.options ?? []
-    const strings = Array.isArray(optIn)
-      ? optIn.map(o => (typeof o === 'string' ? o : (o?.text ?? '')))
-      : []
+    const optRaw = raw.options
+    const optionArray = Array.isArray(optRaw)
+      ? optRaw
+      : typeof optRaw === 'string'
+        ? safeSplit(optRaw, '|')
+        : []
 
-    let options = strings
-      .map(s => s.toString().trim())
-      .filter(Boolean)
-      .map((text) => ({ id: uid('opt'), text, correct: false }))
+    const textOptions = optionArray.map((entry, idx) => {
+      if (typeof entry === 'string') {
+        return {
+          id: uid('opt'),
+          text: cleanString(entry),
+          label: optionLabelForIndex(idx),
+          image: '',
+          correct: false,
+        }
+      }
+      if (entry && typeof entry === 'object') {
+        return {
+          id: entry.id || uid('opt'),
+          text: cleanString(entry.text ?? entry.label ?? ''),
+          label: cleanString(entry.label ?? entry.option ?? '').toUpperCase() || optionLabelForIndex(idx),
+          image: extractImageSource(entry.image ?? entry.url ?? ''),
+          correct: !!entry.correct,
+        }
+      }
+      return {
+        id: uid('opt'),
+        text: '',
+        label: optionLabelForIndex(idx),
+        image: '',
+        correct: false,
+      }
+    })
 
-    if (Array.isArray(optIn) && optIn.length && typeof optIn[0] === 'object' && optIn[0] !== null && optIn[0].text !== undefined) {
-      options = optIn.map(o => ({
-        id: o.id || uid('opt'),
-        text: (o.text || '').toString().trim(),
-        correct: !!o.correct,
-      })).filter(o => o.text)
+    const imageEntries = parseOptionImagesInput(raw.optionImages ?? raw.option_images)
+    const labeledImages = new Map()
+    const unlabeledImages = []
+    imageEntries.forEach((entry, idx) => {
+      const label = cleanString(entry?.label ?? '').toUpperCase()
+      const image = extractImageSource(entry?.image ?? entry?.url ?? '')
+      if (!image) return
+      if (label) {
+        if (!labeledImages.has(label)) labeledImages.set(label, image)
+      } else {
+        unlabeledImages.push(image)
+      }
+    })
+
+    const usedLabels = new Set()
+    const options = []
+    const maxLen = Math.max(textOptions.length, labeledImages.size + unlabeledImages.length)
+
+    for (let i = 0; i < maxLen; i++) {
+      const baseOpt = textOptions[i] || {
+        id: uid('opt'),
+        text: '',
+        label: optionLabelForIndex(i),
+        image: '',
+        correct: false,
+      }
+
+      let label = cleanString(baseOpt.label || '').toUpperCase()
+      if (!label) label = optionLabelForIndex(i)
+      if (usedLabels.has(label)) {
+        let fallback = optionLabelForIndex(options.length)
+        while (usedLabels.has(fallback)) {
+          fallback = optionLabelForIndex(options.length + 1)
+        }
+        label = fallback
+      }
+      usedLabels.add(label)
+
+      let image = ''
+      if (labeledImages.has(label)) {
+        image = labeledImages.get(label)
+        labeledImages.delete(label)
+      } else if (baseOpt.image) {
+        image = baseOpt.image
+      } else if (unlabeledImages.length) {
+        image = unlabeledImages.shift()
+      }
+
+      options.push({
+        id: baseOpt.id || uid('opt'),
+        text: baseOpt.text || '',
+        label,
+        image,
+        correct: !!baseOpt.correct,
+      })
+    }
+
+    for (const [label, image] of labeledImages.entries()) {
+      if (!image) continue
+      let finalLabel = label
+      while (usedLabels.has(finalLabel)) {
+        finalLabel = optionLabelForIndex(options.length)
+      }
+      usedLabels.add(finalLabel)
+      options.push({
+        id: uid('opt'),
+        text: '',
+        label: finalLabel,
+        image,
+        correct: false,
+      })
+    }
+
+    while (unlabeledImages.length) {
+      let label = optionLabelForIndex(options.length)
+      while (usedLabels.has(label)) {
+        label = optionLabelForIndex(options.length + 1)
+      }
+      usedLabels.add(label)
+      options.push({
+        id: uid('opt'),
+        text: '',
+        label,
+        image: unlabeledImages.shift(),
+        correct: false,
+      })
     }
 
     const correctIdx = parseCorrectIndices(raw.correct)
-    if (correctIdx.length) {
-      options = options.map((o, i) => ({ ...o, correct: correctIdx.includes(i + 1) }))
-    }
+    const correctLabels = new Set()
+    const correctRaw = cleanString(raw.correct || '')
+    correctRaw.split(/[;,|]/g).forEach(part => {
+      const trimmed = part.trim().toUpperCase()
+      if (/^[A-Z]+$/.test(trimmed)) correctLabels.add(trimmed)
+    })
+    const answerRaw = cleanString(raw.answer || '')
+    answerRaw.split(/[;,|]/g).forEach(part => {
+      const trimmed = part.trim().toUpperCase()
+      if (/^[A-Z]+$/.test(trimmed)) correctLabels.add(trimmed)
+    })
+
+    options.forEach((opt, idx) => {
+      const indexMatch = correctIdx.includes(idx + 1)
+      const labelMatch = correctLabels.has(opt.label?.toUpperCase())
+      opt.correct = opt.correct || indexMatch || labelMatch
+    })
 
     if (qType === 'single' && !options.some(o => o.correct) && options.length) {
-      options = options.map((o, i) => ({ ...o, correct: i === 0 }))
+      options[0].correct = true
     }
 
     return { ...base, options }
@@ -92,23 +271,24 @@ function parseCorrectIndices(input) {
 export function parseCSV(text, sep = ',') {
   if (!text) return { headers: [], rows: [] }
   if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1)
-  const rawLines = text.split(/\r?\n/)
+  const rawLines = text.split(/\\r?\\n/)
   const lines = rawLines.filter(l => l.trim().length > 0)
   if (!lines.length) return { headers: [], rows: [] }
 
-  const headers = safeSplit(lines[0], sep).map(h => h.replace(/^\ufeff/, '').trim().toLowerCase())
+  const headers = safeSplit(lines[0], sep).map(h => h.replace(/^\\ufeff/, '').trim().toLowerCase())
   const rows = []
   for (let i = 1; i < lines.length; i++) {
     const cols = safeSplit(lines[i], sep)
     while (cols.length < headers.length) cols.push('')
     const obj = {}
     headers.forEach((h, idx) => {
-      obj[h] = (cols[idx] ?? '').replace(/\r$/, '')
+      obj[h] = (cols[idx] ?? '').replace(/\\r$/, '')
     })
     rows.push(obj)
   }
   return { headers, rows }
 }
+
 
 export function safeSplit(line, sep = ',') {
   const out = []
@@ -142,6 +322,49 @@ export function safeSplit(line, sep = ',') {
   out.push(cur)
   return out
 }
+
+function parseOptionImagesInput(input) {
+  if (!input && input !== 0) return [];
+
+  const toEntry = (value) => {
+    if (value === undefined || value === null) return null;
+    if (typeof value === 'string') {
+      const { label, image } = splitLabelAndImage(value);
+      const normalized = extractImageSource(image);
+      if (!normalized) return null;
+      return {
+        label: label ? label.toUpperCase() : '',
+        image: normalized,
+      };
+    }
+    if (typeof value === 'object') {
+      const label = cleanString(value.label ?? value.option ?? value.key ?? '');
+      const image = extractImageSource(value.image ?? value.url ?? value.path ?? '');
+      const text = cleanString(value.text ?? '');
+      if (!image && !text) return null;
+      const entry = {
+        label: label ? label.toUpperCase() : '',
+        image,
+        text,
+      };
+      if (value.id) entry.id = value.id;
+      if (value.correct !== undefined) entry.correct = !!value.correct;
+      return entry;
+    }
+    return null;
+  };
+
+  if (Array.isArray(input)) {
+    return input.map(toEntry).filter(Boolean);
+  }
+
+  if (typeof input === 'string') {
+    return safeSplit(input, '|').map(toEntry).filter(Boolean);
+  }
+
+  return [];
+}
+
 
 export function toQuestionFromCSVRow(row) {
   const type = (row.type || 'single').toString().trim().toLowerCase()
@@ -213,3 +436,8 @@ export function saveQuestionsToStorage(list = []) {
     return false
   }
 }
+
+
+
+
+
