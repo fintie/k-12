@@ -15,7 +15,8 @@ import {
   Bell,
   Search,
   Video,
-  GraduationCap
+  GraduationCap,
+  Newspaper
 } from 'lucide-react'
 
 const Layout = ({ children, user }) => {
@@ -24,6 +25,7 @@ const Layout = ({ children, user }) => {
 
   const navigation = [
     { name: 'Home', href: '/home', icon: BookOpen },
+    { name: 'News', href: '/news', icon: Newspaper },
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
     { name: 'Practice', href: '/practice', icon: BookOpen },
     { name: 'Exam Builder', href: '/exam-builder', icon: FileText },
