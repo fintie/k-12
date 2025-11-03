@@ -10,6 +10,8 @@ import StudyGroups from './pages/StudyGroups'
 import Flashcards from './pages/Flashcards'
 import Settings from './pages/Settings'
 import HomePage from './pages/Homepage'
+import StudentMeeting from './pages/StudentMeeting'
+import TutorMeeting from './pages/TutorMeeting'
 import './App.css'
 
 function App() {
@@ -42,6 +44,8 @@ function App() {
             <Route path="/question-builder" element={<QuestionBuilder />} />
             <Route path="/study-groups" element={<StudyGroups />} />
             <Route path="/flashcards" element={<Flashcards />} />
+            <Route path="/student-meetings" element={<StudentMeeting />} />
+            <Route path="/tutor-meetings" element={<TutorMeeting />} />
             <Route path="/settings" element={<Settings user={user} setUser={setUser} />} />
           </Routes>
         </Layout>

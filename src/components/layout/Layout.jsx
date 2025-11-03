@@ -13,7 +13,9 @@ import {
   Menu,
   X,
   Bell,
-  Search
+  Search,
+  Video,
+  GraduationCap
 } from 'lucide-react'
 
 const Layout = ({ children, user }) => {
@@ -28,6 +30,8 @@ const Layout = ({ children, user }) => {
     { name: 'Question Builder', href: '/question-builder', icon: PlusCircle },
     { name: 'Study Groups', href: '/study-groups', icon: Users },
     { name: 'Flashcards', href: '/flashcards', icon: CreditCard },
+    { name: 'Student Meetings', href: '/student-meetings', icon: Video },
+    { name: 'Tutor Meetings', href: '/tutor-meetings', icon: GraduationCap },
     { name: 'Settings', href: '/settings', icon: Settings },
   ]
 
