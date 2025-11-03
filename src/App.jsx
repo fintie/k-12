@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { useState } from 'react'
 import Layout from './components/layout/Layout'
 import Dashboard from './pages/Dashboard'
+import News from './pages/News'
 import Practice from './pages/Practice'
 import ExamBuilder from './pages/ExamBuilder'
 import QuestionBuilder from './pages/QuestionBuilder'
@@ -35,6 +36,7 @@ function App() {
             <Route path="/" element={<Dashboard user={user} />} />
             <Route path="/dashboard" element={<Dashboard user={user} />} />
             <Route path="/home" element={<HomePage />} />
+            <Route path="/news" element={<News />} />
             <Route path="/practice" element={<Practice />} />
             <Route path="/exam-builder" element={<ExamBuilder />} />
             <Route path="/question-builder" element={<QuestionBuilder />} />
