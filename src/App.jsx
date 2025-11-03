@@ -9,6 +9,7 @@ import StudyGroups from './pages/StudyGroups'
 import Flashcards from './pages/Flashcards'
 import Settings from './pages/Settings'
 import HomePage from './pages/Homepage'
+import News from './pages/News';
 import './App.css'
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard user={user} />} />
             <Route path="/dashboard" element={<Dashboard user={user} />} />
+            <Route path="/news" element={<News />} />
             <Route path="/home" element={<HomePage />} />
             <Route path="/practice" element={<Practice />} />
             <Route path="/exam-builder" element={<ExamBuilder />} />
