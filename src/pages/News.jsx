@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 const News = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Mock news data - in real application this would come from API
   const mockArticles = [
@@ -70,7 +72,42 @@ const News = () => {
   ];
 
   useEffect(() => {
-    setArticles(mockArticles);
+    const fetchNews = async () => {
+      const apiUrl = import.meta.env.VITE_NEWS_API_URL;
+      setLoading(true);
+      setError(null);
+      try {
+        if (apiUrl) {
+          const res = await fetch(apiUrl);
+          if (!res.ok) throw new Error(`Fetch error: ${res.status}`);
+          const data = await res.json();
+          // Support common shapes: { articles: [...] } (NewsAPI), { items: [...] } (RSS->JSON), or an array
+          const items = data.articles || data.items || (Array.isArray(data) ? data : []);
+          const mapped = items.map((a, i) => ({
+            id: a.id || a.url || i,
+            title: a.title || a.headline || 'Untitled',
+            source: (a.source && a.source.name) || a.author || 'Unknown',
+            date: a.publishedAt || a.pubDate || a.date || '',
+            category: a.category || 'news',
+            excerpt: a.description || a.summary || '',
+            url: a.url || a.link || '#',
+            image: a.urlToImage || a.image || '/api/placeholder/400/200'
+          }));
+          setArticles(mapped.length ? mapped : mockArticles);
+        } else {
+          // No API configured — use mock data
+          setArticles(mockArticles);
+        }
+      } catch (err) {
+        console.error('Failed to fetch news', err);
+        setError(err.message || 'Failed to fetch');
+        setArticles(mockArticles);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNews();
   }, []);
 
   const filteredArticles = activeTab === 'all' 
