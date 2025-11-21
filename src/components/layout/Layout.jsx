@@ -1,43 +1,76 @@
-import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+﻿import { useMemo, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { 
-  BarChart3, 
-  BookOpen, 
-  FileText, 
-  PlusCircle, 
-  Users, 
-  CreditCard, 
-  Settings,
+import {
   Menu,
   X,
-  Bell,
-  Search,
+  LogOut,
+  LogIn,
   Video,
   GraduationCap,
-  Newspaper
+  BarChart3,
+  BookOpen,
+  FileText,
+  PlusCircle,
+  Users,
+  CreditCard,
+  Settings as SettingsIcon,
+  Newspaper,
 } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
 
-const Layout = ({ children, user }) => {
+const baseNavigation = [
+  { name: 'Home', href: '/home', icon: BookOpen },
+  { name: 'News', href: '/news', icon: Newspaper },
+  { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
+  { name: 'Practice', href: '/practice', icon: BookOpen },
+  { name: 'Exam Builder', href: '/exam-builder', icon: FileText },
+  { name: 'Question Builder', href: '/question-builder', icon: PlusCircle },
+  { name: 'Study Groups', href: '/study-groups', icon: Users },
+  { name: 'Flashcards', href: '/flashcards', icon: CreditCard },
+]
+
+const Layout = ({ children, profile }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
+  const isAuthenticated = Boolean(user)
 
-  const navigation = [
-    { name: 'Home', href: '/home', icon: BookOpen },
-    { name: 'News', href: '/news', icon: Newspaper },
-    { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
-    { name: 'Practice', href: '/practice', icon: BookOpen },
-    { name: 'Exam Builder', href: '/exam-builder', icon: FileText },
-    { name: 'Question Builder', href: '/question-builder', icon: PlusCircle },
-    { name: 'Study Groups', href: '/study-groups', icon: Users },
-    { name: 'Flashcards', href: '/flashcards', icon: CreditCard },
-    { name: 'Student Meetings', href: '/student-meetings', icon: Video },
-    { name: 'Tutor Meetings', href: '/tutor-meetings', icon: GraduationCap },
-    { name: 'Settings', href: '/settings', icon: Settings },
-  ]
+  const navigation = useMemo(() => {
+    const items = [...baseNavigation]
+    const meetingItem = user
+      ? user.role === 'student'
+        ? { name: 'Student Meetings', href: '/student-meetings', icon: Video }
+        : { name: 'Tutor Meetings', href: '/tutor-meetings', icon: GraduationCap }
+      : { name: 'Meetings', href: '/student-meetings', icon: Video }
+
+    items.push(meetingItem)
+
+    if (user) {
+      items.push({ name: 'Settings', href: '/settings', icon: SettingsIcon })
+    }
+    return items
+  }, [user])
 
   const isActive = (href) => location.pathname === href
+  const displayName = user?.displayName || user?.username || 'Guest'
+  const secondaryLine = user
+    ? user.role === 'student'
+      ? user?.grade || 'Student'
+      : user?.role === 'tutor'
+        ? user?.subject || 'Tutor'
+        : ''
+    : 'Browse & explore'
+  const roleLabel = user?.role || 'Guest'
+  const workspaceLabel = user
+    ? user.role === 'student'
+      ? 'Student Workspace'
+      : user.role === 'tutor'
+        ? 'Tutor Workspace'
+        : 'Workspace'
+    : 'Guest Workspace'
 
   return (
     <div className="flex h-screen bg-slate-50">
@@ -98,15 +131,48 @@ const Layout = ({ children, user }) => {
 
         {/* User profile section */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-200">
-          <div className="flex items-center space-x-3">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-900 truncate">{user.name}</p>
-              <p className="text-xs text-slate-500 truncate">{user.grade}</p>
+          <div className="flex items-center justify-between space-x-3">
+            <div className="flex items-center space-x-3">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={user?.avatar} alt={displayName} />
+                <AvatarFallback>{displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-900 truncate">{displayName}</p>
+                <p className="text-xs text-slate-500 truncate capitalize">{secondaryLine}</p>
+                <p className="text-xs text-slate-400 truncate">{roleLabel}</p>
+                {profile?.progress?.overall != null && (
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between text-[11px] text-slate-400">
+                      <span>Progress</span>
+                      <span>{profile.progress.overall}%</span>
+                    </div>
+                    <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+                      <div
+                        className="h-full bg-indigo-600 transition-all duration-300"
+                        style={{ width: `${profile.progress.overall}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
+            {isAuthenticated ? (
+              <Button variant="outline" size="icon" onClick={logout} title="Logout">
+                <LogOut className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                variant="default"
+                size="sm"
+                className="gap-1 px-2.5 py-1 text-xs"
+                onClick={() => navigate('/login')}
+                title="Login"
+              >
+                <LogIn className="h-3 w-3" />
+                Login
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -125,34 +191,26 @@ const Layout = ({ children, user }) => {
               >
                 <Menu className="h-5 w-5" />
               </Button>
-              
-              <div className="hidden md:flex items-center space-x-2 bg-slate-100 rounded-lg px-3 py-2 w-96">
-                <Search className="h-4 w-4 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search questions, topics, or study materials..."
-                  className="bg-transparent border-none outline-none flex-1 text-sm text-slate-600 placeholder-slate-400"
-                />
-              </div>
+              <span className="text-sm font-medium text-slate-600">
+                {workspaceLabel} · {displayName}
+              </span>
             </div>
-
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
+            {isAuthenticated ? (
+              <Button variant="outline" size="sm" onClick={logout} className="hidden lg:inline-flex gap-2">
+                <LogOut className="h-4 w-4" />
+                Logout
               </Button>
-              
-              <div className="hidden sm:flex items-center space-x-2 text-sm">
-                <span className="text-slate-600">Progress:</span>
-                <div className="w-20 h-2 bg-slate-200 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-indigo-600 transition-all duration-300"
-                    style={{ width: `${user.progress.overall}%` }}
-                  ></div>
-                </div>
-                <span className="text-slate-800 font-medium">{user.progress.overall}%</span>
-              </div>
-            </div>
+            ) : (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => navigate("/login")}
+                className="hidden lg:inline-flex gap-1 px-3 py-1 text-sm"
+              >
+                <LogIn className="h-3 w-3" />
+                Login
+              </Button>
+            )}
           </div>
         </header>
 
@@ -168,4 +226,11 @@ const Layout = ({ children, user }) => {
 }
 
 export default Layout
+
+
+
+
+
+
+
 

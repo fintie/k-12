@@ -1,218 +1,460 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { formatMeetingTime, formatRelativeMessageTime, getMeetingStatus } from '@/utils/date-utils'
-import { CalendarPlus, MessageCircle, Video, NotebookPen } from 'lucide-react'
+import { formatMeetingTime, formatRelativeMessageTime } from '@/utils/date-utils'
+import { formatMeetingStatusLabel } from '@/utils/meeting-utils'
+import { MessageCircle, Video } from 'lucide-react'
+import { fetchChatMessages, fetchConversations, sendChatMessage } from '@/services/chat-service'
+import { fetchUsers } from '@/services/user-service'
+import {
+  fetchMeetingById,
+  fetchMeetings,
+  sendIceCandidate,
+  sendMeetingAnswer,
+  updateMeetingStatus
+} from '@/services/meeting-service'
+import { useMeetingConnection } from '@/hooks/useMeetingConnection'
+import { useMeetingEvents } from '@/hooks/useMeetingEvents'
+import { useAuth } from '@/context/AuthContext'
 
-const mockStudentContacts = [
-  {
-    id: 's1',
-    name: 'Alex Johnson',
-    grade: 'Grade 8',
-    avatar: '/api/placeholder/40/40',
-    lastMessageAt: '2025-01-04T09:45:00.000Z'
-  },
-  {
-    id: 's2',
-    name: 'Bianca Chen',
-    grade: 'Grade 9',
-    avatar: '/api/placeholder/40/40',
-    lastMessageAt: '2025-01-03T16:20:00.000Z'
-  },
-  {
-    id: 's3',
-    name: 'Miguel Torres',
-    grade: 'Grade 7',
-    avatar: '/api/placeholder/40/40',
-    lastMessageAt: '2025-01-02T13:10:00.000Z'
-  }
-]
-
-const mockMessagesByStudent = {
-  s1: [
-    {
-      id: 'm1',
-      sender: 'student',
-      content: 'Could we review discriminants again?',
-      timestamp: '2025-01-03T19:20:00.000Z'
-    },
-    {
-      id: 'm2',
-      sender: 'tutor',
-      content: 'Absolutely! I will prepare a short recap for our next session.',
-      timestamp: '2025-01-03T20:10:00.000Z'
-    }
-  ],
-  s2: [
-    {
-      id: 'm3',
-      sender: 'tutor',
-      content: 'Great progress on the proof problems today.',
-      timestamp: '2025-01-03T07:55:00.000Z'
-    }
-  ],
-  s3: [
-    {
-      id: 'm4',
-      sender: 'student',
-      content: 'I might need extra time for the homework.',
-      timestamp: '2025-01-01T18:05:00.000Z'
-    },
-    {
-      id: 'm5',
-      sender: 'tutor',
-      content: 'Thanks for letting me know. We can adjust the deadline.',
-      timestamp: '2025-01-01T18:20:00.000Z'
-    }
-  ]
-}
-
-const mockMeetingsByStudent = {
-  s1: [
-    {
-      id: 'mt1',
-      title: 'Quadratic Equation Clinic',
-      scheduledFor: '2025-01-06T15:30:00.000Z',
-      link: 'https://meet.example.com/quadratics-alex',
-      description: 'Review discriminant applications and common pitfalls.'
-    }
-  ],
-  s2: [
-    {
-      id: 'mt2',
-      title: 'Geometry Practice',
-      scheduledFor: '2025-01-05T12:00:00.000Z',
-      link: 'https://meet.example.com/geometry-bianca',
-      description: 'Circle theorems and transformations.'
-    }
-  ],
-  s3: []
-}
-
-const fetchStudents = async () => {
-  // TODO: Replace with API integration
-  return Promise.resolve(mockStudentContacts)
-}
-
-const fetchChatHistory = async (studentId) => {
-  // TODO: Replace with API integration
-  return Promise.resolve(mockMessagesByStudent[studentId] ?? [])
-}
-
-const fetchStudentMeetings = async (studentId) => {
-  // TODO: Replace with API integration
-  return Promise.resolve(mockMeetingsByStudent[studentId] ?? [])
-}
-
-const createMeeting = async ({ studentId, title, description, scheduledFor }) => {
-  // TODO: Replace with API integration
-  const slug = `${studentId}-${Date.now()}`
-  return Promise.resolve({
-    id: `mt-${slug}`,
-    title,
-    scheduledFor,
-    description,
-    link: `https://meet.example.com/${slug}`
-  })
-}
-
-const startInstantMeeting = async ({ studentId, description }) => {
-  // TODO: Replace with API integration
-  const now = new Date().toISOString()
-  return Promise.resolve({
-    id: `imt-${studentId}-${Date.now()}`,
-    title: 'Instant Meeting',
-    scheduledFor: now,
-    description: description || 'Instant meeting',
-    link: `https://meet.example.com/${studentId}/instant-${Date.now()}`
-  })
-}
+const createConversationId = (a, b) => [String(a), String(b)].sort().join('__')
 
 const TutorMeeting = () => {
   const [contacts, setContacts] = useState([])
   const [selectedStudentId, setSelectedStudentId] = useState(null)
-  const [messagesByStudent, setMessagesByStudent] = useState({})
-  const [meetingsByStudent, setMeetingsByStudent] = useState({})
+  const [messagesByConversation, setMessagesByConversation] = useState({})
+  const [meetings, setMeetings] = useState([])
   const [newMessage, setNewMessage] = useState('')
   const [contactQuery, setContactQuery] = useState('')
   const [loadingContacts, setLoadingContacts] = useState(false)
   const [loadingChat, setLoadingChat] = useState(false)
   const [loadingMeetings, setLoadingMeetings] = useState(false)
-  const [scheduling, setScheduling] = useState(false)
-  const [startingInstant, setStartingInstant] = useState(false)
-  const [meetingForm, setMeetingForm] = useState({
-    title: '',
-    datetime: '',
-    description: ''
+  const [activeMeeting, setActiveMeeting] = useState(null)
+  const [meetingError, setMeetingError] = useState('')
+  const [pendingIncomingMeeting, setPendingIncomingMeeting] = useState(null)
+  const [isJoiningMeeting, setIsJoiningMeeting] = useState(false)
+  const [isEndingMeeting, setIsEndingMeeting] = useState(false)
+  const { user: authUser } = useAuth()
+  const currentUserId = authUser?.id
+  const currentUserRole = authUser?.role
+  const activeMeetingRef = useRef(null)
+  const pendingIceCandidatesRef = useRef([])
+  const processedRemoteCandidatesRef = useRef(new Set())
+  const answerAppliedRef = useRef(false)
+  const localVideoRef = useRef(null)
+  const remoteVideoRef = useRef(null)
+  const onIceCandidateRef = useRef(() => {})
+
+  const handlePeerIceCandidate = useCallback(
+    (candidate) => {
+      if (candidate && typeof onIceCandidateRef.current === 'function') {
+        onIceCandidateRef.current(candidate)
+      }
+    },
+    []
+  )
+
+  const {
+    localStream,
+    remoteStream,
+    startLocalMedia,
+    stopLocalMedia,
+    startScreenShare,
+    stopScreenShare,
+    createAnswer,
+    setRemoteDescription,
+    addIceCandidate,
+    closeConnection,
+    isScreenSharing,
+    connectionState
+  } = useMeetingConnection({ onIceCandidate: handlePeerIceCandidate })
+
+  const syncPendingMeeting = useCallback(
+    (list) => {
+      if (!currentUserId) {
+        setPendingIncomingMeeting(null)
+        return
+      }
+      const pending =
+        list.find(
+          (meeting) =>
+            meeting.receiverId === String(currentUserId) && meeting.status === 'pending'
+        ) ?? null
+      setPendingIncomingMeeting(pending)
+    },
+    [currentUserId]
+  )
+
+  const upsertMeeting = useCallback(
+    (nextMeeting) => {
+      if (!nextMeeting) return
+      setMeetings((prev) => {
+        const index = prev.findIndex((meeting) => meeting.id === nextMeeting.id)
+        let nextList
+        if (index === -1) {
+          nextList = [...prev, nextMeeting]
+        } else {
+          nextList = [...prev]
+          nextList[index] = nextMeeting
+        }
+        syncPendingMeeting(nextList)
+        return nextList
+      })
+    },
+    [syncPendingMeeting]
+  )
+
+  const cleanupMeetingState = useCallback(() => {
+    pendingIceCandidatesRef.current = []
+    processedRemoteCandidatesRef.current = new Set()
+    answerAppliedRef.current = false
+    activeMeetingRef.current = null
+    closeConnection()
+    stopLocalMedia()
+    setActiveMeeting(null)
+    setMeetingError('')
+  }, [closeConnection, stopLocalMedia])
+
+  const handleRemoteHangUp = useCallback(() => {
+    cleanupMeetingState()
+  }, [cleanupMeetingState])
+
+  const handleHangUp = useCallback(
+    async (nextStatus = 'ended') => {
+      if (!activeMeeting?.id || !currentUserId) {
+        cleanupMeetingState()
+        return
+      }
+      if (isEndingMeeting) return
+      setIsEndingMeeting(true)
+      try {
+        await updateMeetingStatus({
+          meetingId: activeMeeting.id,
+          senderId: currentUserId,
+          status: nextStatus
+        })
+      } catch (error) {
+        console.error('Failed to update meeting status', error)
+      } finally {
+        setIsEndingMeeting(false)
+        cleanupMeetingState()
+      }
+    },
+    [activeMeeting, cleanupMeetingState, currentUserId, isEndingMeeting]
+  )
+
+  const handleAcceptMeeting = useCallback(
+    async (meeting) => {
+      if (!meeting?.id || !currentUserId || isJoiningMeeting) return
+      setMeetingError('')
+      setIsJoiningMeeting(true)
+
+      try {
+        await startLocalMedia()
+        if (meeting.offer) {
+          await setRemoteDescription(meeting.offer)
+          answerAppliedRef.current = true
+        }
+        const answer = await createAnswer({ offerToReceiveAudio: true, offerToReceiveVideo: true })
+        const updated = await sendMeetingAnswer({
+          meetingId: meeting.id,
+          senderId: currentUserId,
+          senderRole: currentUserRole || 'tutor',
+          answer
+        })
+        setActiveMeeting(updated)
+        upsertMeeting(updated)
+      } catch (error) {
+        console.error('Failed to join meeting', error)
+        setMeetingError(error instanceof Error ? error.message : 'Failed to join meeting')
+        cleanupMeetingState()
+      } finally {
+        setIsJoiningMeeting(false)
+      }
+    },
+    [
+      cleanupMeetingState,
+      createAnswer,
+      currentUserId,
+      currentUserRole,
+      isJoiningMeeting,
+      setRemoteDescription,
+      startLocalMedia,
+      upsertMeeting
+    ]
+  )
+
+  const handleDeclineMeeting = useCallback(
+    async (meeting) => {
+      if (!meeting?.id || !currentUserId) return
+      try {
+        await updateMeetingStatus({
+          meetingId: meeting.id,
+          senderId: currentUserId,
+          status: 'rejected'
+        })
+      } catch (error) {
+        console.error('Failed to decline meeting', error)
+      }
+    },
+    [currentUserId]
+  )
+
+  const processMeetingUpdate = useCallback(
+    async (meeting) => {
+      if (!meeting) return
+      upsertMeeting(meeting)
+      if (activeMeetingRef.current?.id === meeting.id) {
+        setActiveMeeting(meeting)
+      }
+
+      const remoteCandidates = Array.isArray(meeting.candidates)
+        ? meeting.candidates.filter((candidate) => candidate.senderId !== String(currentUserId))
+        : []
+
+      for (const candidate of remoteCandidates) {
+        if (processedRemoteCandidatesRef.current.has(candidate.id)) continue
+        processedRemoteCandidatesRef.current.add(candidate.id)
+        try {
+          await addIceCandidate(candidate.candidate)
+        } catch (error) {
+          console.error('Failed to add remote candidate', error)
+        }
+      }
+
+      if (meeting.offer?.sdp && !answerAppliedRef.current) {
+        // Tutor should already have applied offer when accepting, but ensure fallback
+        try {
+          await setRemoteDescription(meeting.offer)
+          answerAppliedRef.current = true
+        } catch (error) {
+          console.error('Failed to set remote offer', error)
+        }
+      }
+
+      if (['ended', 'cancelled', 'rejected', 'failed'].includes(meeting.status)) {
+        handleRemoteHangUp()
+      }
+    },
+    [addIceCandidate, currentUserId, currentUserRole, handleRemoteHangUp, setRemoteDescription, upsertMeeting]
+  )
+
+  const handleScreenShareToggle = useCallback(async () => {
+    try {
+      if (isScreenSharing) {
+        stopScreenShare()
+      } else {
+        await startScreenShare()
+      }
+    } catch (error) {
+      console.error('Screen share error', error)
+      setMeetingError('Unable to toggle screen sharing.')
+    }
+  }, [isScreenSharing, startScreenShare, stopScreenShare])
+
+  const handleMeetingEvent = useCallback(
+    (payload) => {
+      if (!payload?.meeting) return
+      processMeetingUpdate(payload.meeting)
+    },
+    [processMeetingUpdate]
+  )
+
+  useMeetingEvents(currentUserId, {
+    onMeeting: handleMeetingEvent
   })
-  const [formError, setFormError] = useState('')
 
   useEffect(() => {
-    let isMounted = true
+    onIceCandidateRef.current = (candidate) => {
+      if (!candidate) return
+      const meetingId = activeMeetingRef.current?.id
+      if (!meetingId || !currentUserId) {
+        pendingIceCandidatesRef.current = [...pendingIceCandidatesRef.current, candidate]
+        return
+      }
+      sendIceCandidate({
+        meetingId,
+        senderId: currentUserId,
+        senderRole: currentUserRole || 'tutor',
+        candidate
+      }).catch((error) => {
+        console.error('Failed to send ICE candidate', error)
+      })
+    }
+  }, [currentUserId, currentUserRole])
 
-    const loadContacts = async () => {
-      setLoadingContacts(true)
+  const refreshContacts = useCallback(
+    async (withSpinner = false) => {
+      if (!currentUserId) return
+
+      if (withSpinner) setLoadingContacts(true)
       try {
-        const data = await fetchStudents()
-        if (!isMounted) return
-        setContacts(data)
-        if (data.length > 0) {
-          setSelectedStudentId(data[0].id)
-        }
+        const [conversationData, students] = await Promise.all([
+          fetchConversations(currentUserId),
+          fetchUsers({ role: 'student' }),
+        ])
+
+        const studentMap = new Map(
+          students.map((student) => [
+            student.id,
+            {
+              id: student.id,
+              name: student.displayName || student.username,
+              grade: student.grade || 'Student',
+              avatar: '/api/placeholder/40/40',
+            },
+          ])
+        )
+
+        const seen = new Set()
+        const mapped = []
+
+        conversationData.forEach((conversation) => {
+          const otherParticipant = conversation.participants.find(
+            (participant) => participant !== String(currentUserId)
+          )
+          if (!otherParticipant || seen.has(otherParticipant)) return
+          seen.add(otherParticipant)
+
+          const baseInfo =
+            studentMap.get(otherParticipant) ??
+            {
+              id: otherParticipant,
+              name: `Student ${otherParticipant}`,
+              grade: 'Student',
+              avatar: '/api/placeholder/40/40',
+            }
+
+          mapped.push({
+            ...baseInfo,
+            lastMessageAt: conversation.lastMessageAt,
+          })
+        })
+
+        setContacts(mapped)
+        setSelectedStudentId((prevSelected) => {
+          if (mapped.length === 0) {
+            return prevSelected === null ? prevSelected : null
+          }
+          if (!prevSelected || !mapped.some((contact) => contact.id === prevSelected)) {
+            return mapped[0].id
+          }
+          return prevSelected
+        })
+      } catch (error) {
+        console.error('Failed to load conversations', error)
+        setContacts([])
+        setSelectedStudentId((prevSelected) => (prevSelected === null ? prevSelected : null))
       } finally {
-        if (isMounted) {
+        if (withSpinner) {
           setLoadingContacts(false)
         }
       }
-    }
-
-    loadContacts()
-
-    return () => {
-      isMounted = false
-    }
-  }, [])
+    },
+    [currentUserId]
+  )
 
   useEffect(() => {
-    if (!selectedStudentId || messagesByStudent[selectedStudentId]) return
+    activeMeetingRef.current = activeMeeting
+    if (!activeMeeting) {
+      processedRemoteCandidatesRef.current = new Set()
+      pendingIceCandidatesRef.current = []
+      answerAppliedRef.current = false
+    }
+  }, [activeMeeting])
 
-    let isMounted = true
+  useEffect(() => {
+    if (!currentUserId) return
 
-    const loadChat = async () => {
-      setLoadingChat(true)
+    refreshContacts(true)
+    const interval = setInterval(() => {
+      refreshContacts(false)
+    }, 1000)
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [currentUserId, refreshContacts])
+
+  useEffect(() => {
+    if (!activeMeeting?.id || !currentUserId) return
+    if (pendingIceCandidatesRef.current.length === 0) return
+
+    const queued = [...pendingIceCandidatesRef.current]
+    pendingIceCandidatesRef.current = []
+
+    queued.forEach((candidate) => {
+      sendIceCandidate({
+        meetingId: activeMeeting.id,
+        senderId: currentUserId,
+        senderRole: currentUserRole || 'tutor',
+        candidate
+      }).catch((error) => {
+        console.error('Failed to flush ICE candidate', error)
+      })
+    })
+  }, [activeMeeting?.id, currentUserId, currentUserRole])
+
+  useEffect(() => {
+    if (!selectedStudentId || !currentUserId) return
+
+    const conversationId = createConversationId(currentUserId, selectedStudentId)
+    let isActive = true
+
+    const fetchMessages = async (withSpinner = false) => {
+      if (withSpinner) setLoadingChat(true)
       try {
-        const chatHistory = await fetchChatHistory(selectedStudentId)
-        if (isMounted) {
-          setMessagesByStudent((prev) => ({ ...prev, [selectedStudentId]: chatHistory }))
+        const chatHistory = await fetchChatMessages(conversationId)
+        if (isActive) {
+          setMessagesByConversation((prev) => ({ ...prev, [conversationId]: chatHistory }))
+          if (chatHistory.length > 0) {
+            const latestTimestamp = chatHistory[chatHistory.length - 1].timestamp
+            setContacts((prev) =>
+              prev.map((contact) =>
+                contact.id === selectedStudentId
+                  ? { ...contact, lastMessageAt: latestTimestamp }
+                  : contact
+              )
+            )
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load chat history', error)
+        if (isActive) {
+          setMessagesByConversation((prev) => ({ ...prev, [conversationId]: [] }))
         }
       } finally {
-        if (isMounted) {
+        if (withSpinner && isActive) {
           setLoadingChat(false)
         }
       }
     }
 
-    loadChat()
+    fetchMessages(true)
+    const interval = setInterval(() => {
+      fetchMessages(false)
+    }, 1000)
 
     return () => {
-      isMounted = false
+      isActive = false
+      clearInterval(interval)
     }
-  }, [selectedStudentId, messagesByStudent])
+  }, [selectedStudentId, currentUserId])
 
   useEffect(() => {
-    if (!selectedStudentId || meetingsByStudent[selectedStudentId]) return
-
+    if (!currentUserId) return
     let isMounted = true
 
     const loadMeetings = async () => {
-      setLoadingMeetings(true)
       try {
-        const meetings = await fetchStudentMeetings(selectedStudentId)
+        const latest = await fetchMeetings(currentUserId)
         if (isMounted) {
-          setMeetingsByStudent((prev) => ({ ...prev, [selectedStudentId]: meetings }))
+          setMeetings(latest)
+          syncPendingMeeting(latest)
         }
+      } catch (error) {
+        console.error('Failed to load meetings', error)
       } finally {
         if (isMounted) {
           setLoadingMeetings(false)
@@ -220,12 +462,57 @@ const TutorMeeting = () => {
       }
     }
 
+    setLoadingMeetings(true)
     loadMeetings()
+    const interval = setInterval(loadMeetings, 5000)
 
     return () => {
       isMounted = false
+      clearInterval(interval)
     }
-  }, [selectedStudentId, meetingsByStudent])
+  }, [currentUserId, syncPendingMeeting])
+
+  useEffect(() => {
+    if (!activeMeeting?.id) return
+    let isMounted = true
+
+    const refreshMeeting = async () => {
+      try {
+        const latest = await fetchMeetingById(activeMeeting.id)
+        if (!isMounted) return
+        await processMeetingUpdate(latest)
+      } catch (error) {
+        console.error('Failed to refresh meeting', error)
+      }
+    }
+
+    const interval = setInterval(refreshMeeting, 1500)
+    refreshMeeting()
+
+    return () => {
+      isMounted = false
+      clearInterval(interval)
+    }
+  }, [activeMeeting?.id, processMeetingUpdate])
+
+  useEffect(() => {
+    if (!localVideoRef.current) return
+    localVideoRef.current.srcObject = localStream ?? null
+  }, [localStream])
+
+  useEffect(() => {
+    if (!remoteVideoRef.current) return
+    remoteVideoRef.current.srcObject = remoteStream ?? null
+  }, [remoteStream])
+
+  useEffect(() => {
+    if (!activeMeeting || !selectedStudentId) return
+    const isSameStudent = activeMeeting.participants.includes(String(selectedStudentId))
+    if (!isSameStudent) {
+      handleHangUp('cancelled')
+    }
+  }, [activeMeeting, handleHangUp, selectedStudentId])
+
 
   const selectedStudent = useMemo(
     () => contacts.find((contact) => contact.id === selectedStudentId) ?? null,
@@ -248,112 +535,142 @@ const TutorMeeting = () => {
   }, [contacts, contactQuery])
 
   const currentMessages = useMemo(() => {
-    if (!selectedStudentId) return []
-    return messagesByStudent[selectedStudentId] ?? []
-  }, [messagesByStudent, selectedStudentId])
+    if (!selectedStudentId || !currentUserId) return []
+    const conversationId = createConversationId(currentUserId, selectedStudentId)
+    return messagesByConversation[conversationId] ?? []
+  }, [messagesByConversation, selectedStudentId, currentUserId])
 
   const currentMeetings = useMemo(() => {
     if (!selectedStudentId) return []
-    return (meetingsByStudent[selectedStudentId] ?? []).sort((a, b) => {
-      const dateA = new Date(a.scheduledFor).getTime()
-      const dateB = new Date(b.scheduledFor).getTime()
-      return dateA - dateB
-    })
-  }, [meetingsByStudent, selectedStudentId])
+    return meetings
+      .filter((meeting) => meeting.participants.includes(String(selectedStudentId)))
+      .sort((a, b) => {
+        const dateA = new Date(a.createdAt ?? a.updatedAt ?? 0).getTime()
+        const dateB = new Date(b.createdAt ?? b.updatedAt ?? 0).getTime()
+        return dateB - dateA
+      })
+  }, [meetings, selectedStudentId])
+
+  const pendingMeetingStudentId = useMemo(() => {
+    if (!pendingIncomingMeeting) return null
+    return (
+      pendingIncomingMeeting.participants.find(
+        (participant) => participant !== String(currentUserId)
+      ) ?? pendingIncomingMeeting.initiatorId
+    )
+  }, [pendingIncomingMeeting, currentUserId])
+
+  const pendingMeetingStudent = useMemo(
+    () => contacts.find((contact) => contact.id === pendingMeetingStudentId) ?? null,
+    [contacts, pendingMeetingStudentId]
+  )
+
+  const meetingStatusDescription = useMemo(() => {
+    if (!activeMeeting) return ''
+    return formatMeetingStatusLabel(activeMeeting.status)
+  }, [activeMeeting])
+
+  const isMeetingLive = Boolean(activeMeeting)
+  const callButtonDisabled = activeMeeting
+    ? isEndingMeeting
+    : pendingIncomingMeeting
+      ? isJoiningMeeting
+      : true
+  const callButtonLabel = activeMeeting
+    ? isEndingMeeting
+      ? 'Ending...'
+      : 'Hang up'
+    : pendingIncomingMeeting
+      ? isJoiningMeeting
+        ? 'Connecting...'
+        : 'Answer Call'
+      : 'Waiting'
 
   const handleSelectStudent = (studentId) => {
     setSelectedStudentId(studentId)
-    setFormError('')
+    setMeetingError('')
   }
 
-  const handleSendMessage = () => {
-    if (!newMessage.trim() || !selectedStudentId) return
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !selectedStudentId || !currentUserId) return
+
+    const trimmed = newMessage.trim()
+    const conversationId = createConversationId(currentUserId, selectedStudentId)
+    const optimisticId = `local-${Date.now()}`
+    const timestamp = new Date().toISOString()
 
     const newEntry = {
-      id: `local-${Date.now()}`,
-      sender: 'tutor',
-      content: newMessage.trim(),
-      timestamp: new Date().toISOString()
+      id: optimisticId,
+      senderRole: 'tutor',
+      senderId: currentUserId,
+      participants: [String(currentUserId), String(selectedStudentId)],
+      content: trimmed,
+      timestamp,
     }
 
-    setMessagesByStudent((prev) => {
-      const existing = prev[selectedStudentId] ?? []
-      return { ...prev, [selectedStudentId]: [...existing, newEntry] }
+    setMessagesByConversation((prev) => {
+      const existing = prev[conversationId] ?? []
+      return { ...prev, [conversationId]: [...existing, newEntry] }
     })
 
-    setContacts((prev) =>
-      prev.map((contact) =>
-        contact.id === selectedStudentId
-          ? { ...contact, lastMessageAt: newEntry.timestamp }
-          : contact
-      )
-    )
+    setContacts((prev) => {
+      const existing = prev.find((contact) => contact.id === selectedStudentId)
+      if (existing) {
+        return prev.map((contact) =>
+          contact.id === selectedStudentId
+            ? { ...contact, lastMessageAt: timestamp }
+            : contact
+        )
+      }
+      return [
+        ...prev,
+        {
+          id: selectedStudentId,
+          name: `Student ${selectedStudentId}`,
+          grade: 'Student',
+          avatar: '/api/placeholder/40/40',
+          lastMessageAt: timestamp,
+        },
+      ]
+    })
 
     setNewMessage('')
 
-    // TODO: send message through messaging service
-  }
-
-  const handleMeetingFormChange = (field) => (event) => {
-    setMeetingForm((prev) => ({ ...prev, [field]: event.target.value }))
-    setFormError('')
-  }
-
-  const handleScheduleMeeting = async (event) => {
-    event.preventDefault()
-    if (!selectedStudentId) {
-      setFormError('Select a student before scheduling a meeting.')
-      return
-    }
-
-    if (!meetingForm.title.trim() || !meetingForm.datetime) {
-      setFormError('Meeting title and date/time are required.')
-      return
-    }
-
-    setScheduling(true)
     try {
-      const scheduledFor = new Date(meetingForm.datetime).toISOString()
-      const meeting = await createMeeting({
-        studentId: selectedStudentId,
-        title: meetingForm.title.trim(),
-        description: meetingForm.description.trim(),
-        scheduledFor
+      await sendChatMessage({
+        conversationId,
+        senderRole: 'tutor',
+        senderId: currentUserId,
+        content: trimmed,
+        participants: [String(currentUserId), String(selectedStudentId)],
+      })
+      const refreshed = await fetchChatMessages(conversationId)
+
+      setMessagesByConversation((prev) => ({ ...prev, [conversationId]: refreshed }))
+
+      const latestTimestamp = refreshed.length
+        ? refreshed[refreshed.length - 1].timestamp
+        : timestamp
+
+      setContacts((prev) => {
+        const updated = prev.map((contact) =>
+          contact.id === selectedStudentId
+            ? { ...contact, lastMessageAt: latestTimestamp }
+            : contact
+        )
+        return updated
       })
 
-      setMeetingsByStudent((prev) => {
-        const existing = prev[selectedStudentId] ?? []
-        return { ...prev, [selectedStudentId]: [...existing, meeting] }
+      await refreshContacts()
+    } catch (error) {
+      console.error('Failed to send message', error)
+      setMessagesByConversation((prev) => {
+        const existing = prev[conversationId] ?? []
+        return {
+          ...prev,
+          [conversationId]: existing.filter((message) => message.id !== optimisticId),
+        }
       })
-
-      setMeetingForm({ title: '', datetime: '', description: '' })
-      setFormError('')
-    } finally {
-      setScheduling(false)
-    }
-  }
-
-  const handleStartInstantMeeting = async () => {
-    if (!selectedStudentId) {
-      setFormError('Select a student before starting an instant meeting.')
-      return
-    }
-
-    setStartingInstant(true)
-    try {
-      const meeting = await startInstantMeeting({
-        studentId: selectedStudentId,
-        description: meetingForm.description.trim()
-      })
-
-      setMeetingsByStudent((prev) => {
-        const existing = prev[selectedStudentId] ?? []
-        return { ...prev, [selectedStudentId]: [...existing, meeting] }
-      })
-
-      setFormError('')
-    } finally {
-      setStartingInstant(false)
     }
   }
 
@@ -362,11 +679,11 @@ const TutorMeeting = () => {
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold text-slate-900">Student Meetings</h1>
         <p className="text-sm text-slate-600">
-          Manage your student conversations, schedule sessions, and launch meetings instantly.
+          Manage your student conversations and respond to live meeting requests in real time.
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[280px_1fr_340px]">
+      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
         {/* Contacts */}
         <div className="flex h-[720px] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
@@ -400,6 +717,7 @@ const TutorMeeting = () => {
 
             {sortedContacts.map((contact) => {
               const isActive = contact.id === selectedStudentId
+              const hasIncomingMeeting = contact.id === pendingMeetingStudentId
               return (
                 <button
                   key={contact.id}
@@ -423,12 +741,19 @@ const TutorMeeting = () => {
                     <span className="text-sm font-medium text-slate-900">
                       {contact.name}
                     </span>
-                    <span className="text-xs text-slate-500">{contact.grade}</span>
+                    <span className="text-xs text-slate-500">
+                      {contact.grade}
+                      {hasIncomingMeeting && (
+                        <span className="ml-2 text-amber-600">Incoming call</span>
+                      )}
+                    </span>
                   </div>
                   <span className="text-xs text-slate-400">
-                    {contact.lastMessageAt
-                      ? formatRelativeMessageTime(contact.lastMessageAt)
-                      : ''}
+                    {hasIncomingMeeting
+                      ? 'Incoming'
+                      : contact.lastMessageAt
+                        ? formatRelativeMessageTime(contact.lastMessageAt)
+                        : ''}
                   </span>
                 </button>
               )
@@ -447,25 +772,156 @@ const TutorMeeting = () => {
                 <p className="text-xs text-slate-500">Grade: {selectedStudent.grade}</p>
               )}
             </div>
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button
+              variant={isMeetingLive ? 'destructive' : pendingIncomingMeeting ? 'default' : 'outline'}
+              size="sm"
+              className="gap-2"
+              onClick={() => {
+                if (isMeetingLive) {
+                  handleHangUp('ended')
+                } else if (pendingIncomingMeeting) {
+                  if (pendingMeetingStudentId) {
+                    handleSelectStudent(pendingMeetingStudentId)
+                  }
+                  handleAcceptMeeting(pendingIncomingMeeting)
+                }
+              }}
+              disabled={callButtonDisabled}
+            >
               <Video className="h-4 w-4" />
-              Start Call
+              {callButtonLabel}
             </Button>
+            {!isMeetingLive && (isJoiningMeeting || pendingIncomingMeeting) && (
+              <Button
+                variant="destructive"
+                size="sm"
+                className="gap-2"
+                onClick={() => handleHangUp('cancelled')}
+                disabled={isEndingMeeting}
+              >
+                <Video className="h-4 w-4" />
+                Hang up
+              </Button>
+            )}
           </div>
+
+          {pendingIncomingMeeting && !isMeetingLive && (
+            <div className="border-b border-slate-200 bg-amber-50 px-5 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-slate-900">
+                    Incoming meeting from {pendingMeetingStudent?.name || 'student'}
+                  </p>
+                  <p className="text-xs text-slate-600">Answer to start the live session.</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (pendingMeetingStudentId) {
+                        handleSelectStudent(pendingMeetingStudentId)
+                      }
+                      handleDeclineMeeting(pendingIncomingMeeting)
+                    }}
+                    disabled={isJoiningMeeting}
+                  >
+                    Decline
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      if (pendingMeetingStudentId) {
+                        handleSelectStudent(pendingMeetingStudentId)
+                      }
+                      handleAcceptMeeting(pendingIncomingMeeting)
+                    }}
+                    disabled={isJoiningMeeting}
+                  >
+                    {isJoiningMeeting ? 'Connecting...' : 'Answer'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isMeetingLive ? (
+            <div className="border-b border-slate-200 bg-white px-5 py-4">
+              <div className="space-y-4">
+                <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
+                  <div className="relative h-56 rounded-xl bg-slate-900 text-white">
+                    <video
+                      ref={remoteVideoRef}
+                      className="h-full w-full rounded-xl object-cover"
+                      autoPlay
+                      playsInline
+                    />
+                    {!remoteStream && (
+                      <span className="absolute inset-0 flex items-center justify-center text-xs text-slate-200">
+                        Waiting for the student&apos;s video...
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative h-40 sm:h-56 rounded-xl bg-slate-900 text-white">
+                    <video
+                      ref={localVideoRef}
+                      className="h-full w-full rounded-xl object-cover opacity-80"
+                      autoPlay
+                      playsInline
+                      muted
+                    />
+                    <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-xs">
+                      You
+                    </span>
+                    {isScreenSharing && (
+                      <span className="absolute bottom-2 left-2 rounded-full bg-amber-500/80 px-2 py-0.5 text-[10px] font-medium text-white">
+                        Screen sharing
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                  <span className="font-medium text-slate-700">
+                    Status: {meetingStatusDescription || 'Connecting'}
+                  </span>
+                  <span>Connection: {connectionState}</span>
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                  <Button variant="outline" size="sm" onClick={handleScreenShareToggle}>
+                    {isScreenSharing ? 'Stop Sharing' : 'Share Screen'}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleHangUp('ended')}
+                    disabled={isEndingMeeting}
+                  >
+                    Hang up
+                  </Button>
+                </div>
+
+                {meetingError && (
+                  <p className="text-sm text-red-600" role="alert">
+                    {meetingError}
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : meetingError ? (
+            <div className="border-b border-red-200 bg-red-50 px-5 py-4 text-sm text-red-600">
+              {meetingError}
+            </div>
+          ) : null}
 
           <div className="flex-1 space-y-4 overflow-y-auto bg-slate-50 px-5 py-4">
             {loadingChat && (
               <div className="text-sm text-slate-500">Loading conversation...</div>
             )}
 
-            {!loadingChat && currentMessages.length === 0 && (
-              <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
-                Send a message to start the conversation.
-              </div>
-            )}
-
             {currentMessages.map((message) => {
-              const isTutor = message.sender === 'tutor'
+              const isTutor = message.senderRole === 'tutor'
               return (
                 <div
                   key={message.id}
@@ -475,7 +931,7 @@ const TutorMeeting = () => {
                     className={`max-w-xs rounded-2xl px-4 py-3 text-sm shadow-sm sm:max-w-sm ${
                       isTutor
                         ? 'bg-indigo-600 text-white rounded-br-none'
-                        : 'bg-white text-slate-800 rounded-bl-none'
+                        : 'bg-slate-200 text-slate-800 rounded-bl-none'
                     }`}
                   >
                     <p>{message.content}</p>
@@ -511,144 +967,11 @@ const TutorMeeting = () => {
           </div>
         </div>
 
-        {/* Meeting Management */}
-        <div className="flex h-[720px] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-4">
-            <CalendarPlus className="h-4 w-4 text-indigo-600" />
-            <h2 className="text-sm font-semibold text-slate-900">Meeting Controls</h2>
-          </div>
 
-          <div className="flex-1 space-y-6 overflow-y-auto px-5 py-4">
-            <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-900">Instant Meeting</p>
-                  <p className="text-xs text-slate-500">
-                    Launch a call now for quick check-ins or urgent support.
-                  </p>
-                </div>
-                <Video className="h-4 w-4 text-indigo-500" />
-              </div>
-              <Button
-                variant="default"
-                className="w-full gap-2"
-                onClick={handleStartInstantMeeting}
-                disabled={startingInstant || !selectedStudent}
-              >
-                <Video className="h-4 w-4" />
-                {startingInstant ? 'Starting...' : 'Start Instant Meeting'}
-              </Button>
-            </div>
-
-            <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="flex items-center gap-2">
-                <NotebookPen className="h-4 w-4 text-indigo-500" />
-                <p className="text-sm font-semibold text-slate-900">Schedule Meeting</p>
-              </div>
-              <form className="space-y-4" onSubmit={handleScheduleMeeting}>
-                <div className="space-y-1">
-                  <Label htmlFor="meeting-title">Title</Label>
-                  <Input
-                    id="meeting-title"
-                    placeholder="Enter meeting title"
-                    value={meetingForm.title}
-                    onChange={handleMeetingFormChange('title')}
-                    disabled={!selectedStudent}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="meeting-datetime">Date & Time</Label>
-                  <Input
-                    id="meeting-datetime"
-                    type="datetime-local"
-                    value={meetingForm.datetime}
-                    onChange={handleMeetingFormChange('datetime')}
-                    disabled={!selectedStudent}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="meeting-description">Description</Label>
-                  <textarea
-                    id="meeting-description"
-                    className="h-24 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                    placeholder="Highlight goals or preparation notes"
-                    value={meetingForm.description}
-                    onChange={handleMeetingFormChange('description')}
-                    disabled={!selectedStudent}
-                  />
-                </div>
-                {formError && (
-                  <p className="text-xs text-red-500">{formError}</p>
-                )}
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={scheduling || !selectedStudent}
-                >
-                  {scheduling ? 'Scheduling...' : 'Add Meeting'}
-                </Button>
-              </form>
-            </div>
-
-            <div>
-              <h3 className="mb-3 text-sm font-semibold text-slate-900">
-                {selectedStudent ? `${selectedStudent.name}'s Meetings` : 'Select a student'}
-              </h3>
-              <div className="space-y-4">
-                {loadingMeetings && (
-                  <div className="text-sm text-slate-500">Loading meetings...</div>
-                )}
-
-                {!loadingMeetings && (!selectedStudent || currentMeetings.length === 0) && (
-                  <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-center text-sm text-slate-500">
-                    {selectedStudent
-                      ? 'No meetings scheduled. Schedule one to get started.'
-                      : 'Select a student to manage meetings.'}
-                  </div>
-                )}
-
-                {!loadingMeetings &&
-                  currentMeetings.map((meeting) => {
-                    const status = getMeetingStatus(meeting.scheduledFor)
-                    return (
-                      <div
-                        key={meeting.id}
-                        className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-semibold text-slate-900">
-                              {meeting.title}
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              {formatMeetingTime(meeting.scheduledFor)}
-                            </p>
-                          </div>
-                          <span className="inline-flex items-center rounded-full bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-600">
-                            {status}
-                          </span>
-                        </div>
-                        {meeting.description && (
-                          <p className="text-xs text-slate-600">{meeting.description}</p>
-                        )}
-                        <div className="rounded-md bg-slate-50 px-3 py-2">
-                          <p className="text-xs text-slate-500">Meeting Link</p>
-                          <p className="truncate text-sm text-indigo-600">{meeting.link}</p>
-                        </div>
-                        <Button variant="outline" size="sm" className="w-full gap-2">
-                          <Video className="h-4 w-4" />
-                          Join Meeting
-                        </Button>
-                      </div>
-                    )
-                  })}
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   )
 }
 
 export default TutorMeeting
+
