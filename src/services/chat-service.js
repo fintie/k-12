@@ -2,7 +2,11 @@ const trimTrailingSlash = (value) => value.replace(/\/+$/, '');
 
 const CHAT_SERVER_BASE_URL = (() => {
   const envUrl = import.meta?.env?.VITE_CHAT_SERVER_URL;
-  return envUrl ? trimTrailingSlash(envUrl) : 'http://localhost:3000';
+  if (envUrl) return trimTrailingSlash(envUrl);
+
+  // Default to local during dev, fallback to Render service in production builds
+  if (import.meta?.env?.DEV) return 'http://localhost:3000';
+  return 'https://test-server-uqtw.onrender.com';
 })();
 
 const asMessage = (payload) => ({
