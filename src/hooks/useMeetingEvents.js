@@ -12,13 +12,14 @@ export const useMeetingEvents = (participantId, { onMeeting } = {}) => {
   }, [onMeeting])
 
   useEffect(() => {
-    if (!participantId || typeof window === 'undefined' || typeof EventSource === 'undefined') {
+    const normalizedId = participantId != null ? String(participantId).trim() : ''
+    if (!normalizedId || typeof window === 'undefined' || typeof EventSource === 'undefined') {
       setConnected(false)
       return undefined
     }
 
     const source = new EventSource(
-      `${BASE_URL}/meetings/events?participantId=${encodeURIComponent(participantId)}`
+      `${BASE_URL}/meetings/events?participantId=${encodeURIComponent(normalizedId)}`
     )
 
     const handleMeeting = (event) => {

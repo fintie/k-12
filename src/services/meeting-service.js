@@ -68,9 +68,9 @@ export const createMeeting = async ({
     method: 'POST',
     body: JSON.stringify({
       conversationId,
-      initiatorId,
+      initiatorId: String(initiatorId),
       initiatorRole,
-      receiverId,
+      receiverId: String(receiverId),
       receiverRole,
       offer
     })
@@ -83,7 +83,7 @@ export const fetchMeetings = async (participantId, { status } = {}) => {
   if (!participantId) {
     throw new Error('participantId is required to fetch meetings')
   }
-  const search = new URLSearchParams({ participantId })
+  const search = new URLSearchParams({ participantId: String(participantId) })
   if (status) {
     search.set('status', status)
   }
@@ -96,7 +96,7 @@ export const fetchMeetingById = async (meetingId) => {
   if (!meetingId) {
     throw new Error('meetingId is required')
   }
-  const data = await handleRequest(`/meetings/${encodeURIComponent(meetingId)}`)
+  const data = await handleRequest(`/meetings/${encodeURIComponent(String(meetingId))}`)
   return assertMeetingPayload(data)
 }
 
@@ -105,9 +105,9 @@ export const sendMeetingAnswer = async ({ meetingId, senderId, senderRole, answe
     throw new Error('meetingId, senderId, senderRole, and answer are required')
   }
 
-  const data = await handleRequest(`/meetings/${encodeURIComponent(meetingId)}/answer`, {
+  const data = await handleRequest(`/meetings/${encodeURIComponent(String(meetingId))}/answer`, {
     method: 'POST',
-    body: JSON.stringify({ senderId, senderRole, answer })
+    body: JSON.stringify({ senderId: String(senderId), senderRole, answer })
   })
 
   return assertMeetingPayload(data)
@@ -118,9 +118,9 @@ export const sendIceCandidate = async ({ meetingId, senderId, senderRole, candid
     throw new Error('meetingId, senderId, and candidate are required')
   }
 
-  return handleRequest(`/meetings/${encodeURIComponent(meetingId)}/candidates`, {
+  return handleRequest(`/meetings/${encodeURIComponent(String(meetingId))}/candidates`, {
     method: 'POST',
-    body: JSON.stringify({ senderId, senderRole, candidate })
+    body: JSON.stringify({ senderId: String(senderId), senderRole, candidate })
   })
 }
 
@@ -129,9 +129,9 @@ export const updateMeetingStatus = async ({ meetingId, senderId, status }) => {
     throw new Error('meetingId, senderId, and status are required')
   }
 
-  const data = await handleRequest(`/meetings/${encodeURIComponent(meetingId)}/status`, {
+  const data = await handleRequest(`/meetings/${encodeURIComponent(String(meetingId))}/status`, {
     method: 'POST',
-    body: JSON.stringify({ senderId, status })
+    body: JSON.stringify({ senderId: String(senderId), status })
   })
 
   return assertMeetingPayload(data)
