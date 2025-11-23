@@ -67,19 +67,29 @@ const TutorMeeting = () => {
     addIceCandidate,
     closeConnection,
     isScreenSharing,
-    connectionState
+    connectionState,
+    ensurePeerConnection
   } = useMeetingConnection({ onIceCandidate: handlePeerIceCandidate })
 
   const syncPendingMeeting = useCallback(
     (list) => {
+      const asString = (value) => (value == null ? '' : String(value))
+      const me = asString(currentUserId)
       if (!currentUserId) {
         setPendingIncomingMeeting(null)
         return
       }
       const pending =
         list.find(
-          (meeting) =>
-            meeting.receiverId === String(currentUserId) && meeting.status === 'pending'
+          (meeting) => {
+            const status = meeting.status || ''
+            if (!['pending', 'ringing'].includes(status)) return false
+            const receiverMatch = asString(meeting.receiverId) === me
+            const participantMatch = Array.isArray(meeting.participants)
+              ? meeting.participants.some((p) => asString(p) === me)
+              : false
+            return receiverMatch || participantMatch
+          }
         ) ?? null
       setPendingIncomingMeeting(pending)
     },
@@ -151,7 +161,28 @@ const TutorMeeting = () => {
       setIsJoiningMeeting(true)
 
       try {
-        await startLocalMedia()
+        const mediaTimeoutMs = 3000
+        let mediaStarted = false
+        await Promise.race([
+          startLocalMedia().then(() => {
+            mediaStarted = true
+          }),
+          new Promise((resolve) =>
+            setTimeout(() => {
+              resolve('timeout')
+            }, mediaTimeoutMs)
+          )
+        ])
+
+        if (!mediaStarted) {
+          console.warn('Tutor media permission pending/failed, proceeding without local media')
+          setMeetingError(
+            'Camera/mic unavailable right now. Connecting without your media; grant permission to share.'
+          )
+          const pc = ensurePeerConnection()
+          pc.addTransceiver('audio', { direction: 'recvonly' })
+          pc.addTransceiver('video', { direction: 'recvonly' })
+        }
         if (meeting.offer) {
           await setRemoteDescription(meeting.offer)
           answerAppliedRef.current = true
@@ -174,15 +205,16 @@ const TutorMeeting = () => {
       }
     },
     [
-      cleanupMeetingState,
-      createAnswer,
-      currentUserId,
-      currentUserRole,
-      isJoiningMeeting,
-      setRemoteDescription,
-      startLocalMedia,
-      upsertMeeting
-    ]
+    cleanupMeetingState,
+    createAnswer,
+    currentUserId,
+    currentUserRole,
+    ensurePeerConnection,
+    isJoiningMeeting,
+    setRemoteDescription,
+    startLocalMedia,
+    upsertMeeting
+  ]
   )
 
   const handleDeclineMeeting = useCallback(
@@ -464,7 +496,7 @@ const TutorMeeting = () => {
 
     setLoadingMeetings(true)
     loadMeetings()
-    const interval = setInterval(loadMeetings, 5000)
+    const interval = setInterval(loadMeetings, 1500)
 
     return () => {
       isMounted = false

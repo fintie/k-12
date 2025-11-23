@@ -1,13 +1,16 @@
 const trimTrailingSlash = (value) => value.replace(/\/+$/, '');
 
+const DEFAULT_BASE_URL = 'https://test-server-uqtw.onrender.com';
+
 const CHAT_SERVER_BASE_URL = (() => {
   const envUrl = import.meta?.env?.VITE_CHAT_SERVER_URL;
   if (envUrl) return trimTrailingSlash(envUrl);
-
-  // Default to local during dev, fallback to Render service in production builds
-  if (import.meta?.env?.DEV) return 'http://localhost:3000';
-  return 'https://test-server-uqtw.onrender.com';
+  // Always fall back to hosted server if no env override is provided
+  return DEFAULT_BASE_URL;
 })();
+
+// Helps confirm which backend is in use
+console.log('Chat/meeting server base:', CHAT_SERVER_BASE_URL);
 
 const asMessage = (payload) => ({
   id: payload.id,

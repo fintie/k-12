@@ -15,6 +15,9 @@ const parseResponse = async (response) => {
 }
 
 const handleRequest = async (path, options = {}) => {
+  if (import.meta?.env?.DEV) {
+    console.log('[meeting] request', { url: `${BASE_URL}${path}`, method: options.method || 'GET' })
+  }
   const response = await fetch(`${BASE_URL}${path}`, {
     headers: { 'Content-Type': 'application/json', ...(options.headers ?? {}) },
     ...options
@@ -23,6 +26,7 @@ const handleRequest = async (path, options = {}) => {
 
   if (!response.ok) {
     const message = data?.error || 'Meeting service request failed'
+    console.error('[meeting] request failed', { url: `${BASE_URL}${path}`, status: response.status, message })
     throw new Error(message)
   }
 

@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { formatMeetingTime, formatRelativeMessageTime } from '@/utils/date-utils'
 import { formatMeetingStatusLabel } from '@/utils/meeting-utils'
 import { MessageCircle, Video, CalendarClock, ChevronRight } from 'lucide-react'
-import { fetchChatMessages, fetchConversations, sendChatMessage } from '@/services/chat-service'
+import { fetchChatMessages, fetchConversations, sendChatMessage, getChatServerBaseUrl } from '@/services/chat-service'
 import { fetchUsers } from '@/services/user-service'
 import { createMeeting, fetchMeetingById, fetchMeetings, sendIceCandidate, updateMeetingStatus } from '@/services/meeting-service'
 import { useMeetingConnection } from '@/hooks/useMeetingConnection'
@@ -63,7 +63,8 @@ const StudentMeeting = () => {
     addIceCandidate,
     closeConnection,
     isScreenSharing,
-    connectionState
+    connectionState,
+    ensurePeerConnection
   } = useMeetingConnection({ onIceCandidate: handlePeerIceCandidate })
 
   const clearMeetingTimeout = useCallback(() => {
@@ -143,12 +144,65 @@ const StudentMeeting = () => {
 
   const handleStartMeeting = useCallback(async () => {
     if (!selectedTutorId || !currentUserId || isStartingMeeting) return
+    console.log('[meeting] startMeeting clicked', {
+      currentUserId,
+      selectedTutorId,
+      baseUrl: getChatServerBaseUrl?.()
+    })
     setMeetingError('')
     setIsStartingMeeting(true)
 
     try {
-      await startLocalMedia()
-      const offer = await createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true })
+      const mediaTimeoutMs = 3000
+      let mediaStarted = false
+      console.log('[meeting] attempting to start local media')
+      await Promise.race([
+        startLocalMedia().then(() => {
+          mediaStarted = true
+          console.log('[meeting] local media started')
+        }),
+        new Promise((resolve) =>
+          setTimeout(() => {
+            resolve('timeout')
+          }, mediaTimeoutMs)
+        )
+      ])
+
+      if (!mediaStarted) {
+        console.warn('Student media permission pending/failed, proceeding without local media')
+        setMeetingError(
+          'Camera/mic unavailable right now. Call is starting without your media; grant permission to share.'
+        )
+        const pc = ensurePeerConnection()
+        pc.addTransceiver('audio', { direction: 'recvonly' })
+        pc.addTransceiver('video', { direction: 'recvonly' })
+          console.log('[meeting] added recvonly transceivers as fallback')
+        }
+
+      let offer
+      try {
+        console.log('[meeting] createOffer start')
+        offer = await Promise.race([
+          createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true }),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('createOffer timeout after 5s')), 5000)
+          )
+        ])
+        console.log('[meeting] createOffer success', { type: offer?.type, sdpLength: offer?.sdp?.length })
+      } catch (offerError) {
+        console.error('[meeting] createOffer failed, using fallback offer', offerError)
+        offer = {
+          type: 'offer',
+          sdp:
+            'v=0\r\no=- 0 0 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 0\r\nc=IN IP4 0.0.0.0\r\n'
+        }
+      }
+      console.log('[meeting] creating meeting', {
+        baseUrl: getChatServerBaseUrl?.(),
+        conversationId: createConversationId(currentUserId, selectedTutorId),
+        initiatorId: currentUserId,
+        receiverId: selectedTutorId
+      })
       const meeting = await createMeeting({
         conversationId: createConversationId(currentUserId, selectedTutorId),
         initiatorId: currentUserId,
@@ -157,6 +211,7 @@ const StudentMeeting = () => {
         receiverRole: 'tutor',
         offer
       })
+      console.log('[meeting] created meeting', meeting)
       setActiveMeeting(meeting)
       upsertMeeting(meeting)
       startMeetingTimeout()
@@ -172,6 +227,7 @@ const StudentMeeting = () => {
     createOffer,
     currentUserId,
     currentUserRole,
+    ensurePeerConnection,
     isStartingMeeting,
     selectedTutorId,
     startLocalMedia,
