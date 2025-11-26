@@ -6,6 +6,8 @@ const News = () => {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [email, setEmail] = useState('');
+  const [subscribeStatus, setSubscribeStatus] = useState(null);
 
   // Mock news data - in real application this would come from API
   const mockArticles = [
@@ -13,63 +15,66 @@ const News = () => {
       id: 1,
       title: 'AI in Education: Transforming Learning Experiences',
       source: 'Medium',
-      date: '2024-01-15',
+      date: '2025-10-10',
       category: 'technology',
       excerpt: 'How artificial intelligence is revolutionizing personalized learning and educational outcomes.',
-      url: '#',
+      url: 'https://medium.com/@example/ai-in-education-2025',
       image: '/api/placeholder/400/200'
     },
     {
       id: 2,
       title: 'New Education Policy Focuses on Digital Literacy',
       source: 'Government',
-      date: '2024-01-12',
+      date: '2025-09-20',
       category: 'policy',
       excerpt: 'Recent policy changes emphasize the importance of digital skills in K-12 education.',
-      url: '#',
+      url: 'https://gov.example.org/education/digital-literacy-2025',
       image: '/api/placeholder/400/200'
     },
     {
       id: 3,
       title: 'The Rise of Adaptive Learning Platforms',
       source: 'EdTech Review',
-      date: '2024-01-10',
+      date: '2025-08-18',
       category: 'trends',
       excerpt: 'Exploring how adaptive learning technologies are customizing education for each student.',
-      url: '#',
+      url: 'https://edtech.example.com/adaptive-learning-2025',
       image: '/api/placeholder/400/200'
     },
     {
       id: 4,
       title: 'Mathematics Education Trends in 2024',
       source: 'Academic Journal',
-      date: '2024-01-08',
+      date: '2025-07-30',
       category: 'research',
       excerpt: 'Latest research on effective mathematics teaching methodologies and tools.',
-      url: '#',
+      url: 'https://journal.example.edu/math-education-2025',
       image: '/api/placeholder/400/200'
     },
     {
       id: 5,
       title: 'Gamification in Math Learning Shows Positive Results',
       source: 'Research Study',
-      date: '2024-01-05',
+      date: '2025-06-12',
       category: 'research',
       excerpt: 'New study demonstrates improved engagement and outcomes through game-based math learning.',
-      url: '#',
+      url: 'https://research.example.org/gamification-math-2025',
       image: '/api/placeholder/400/200'
     },
     {
       id: 6,
       title: 'Remote Learning Tools Evolution Post-Pandemic',
       source: 'TechCrunch',
-      date: '2024-01-03',
+      date: '2025-05-02',
       category: 'technology',
       excerpt: 'How remote learning platforms have evolved and what the future holds for digital education.',
-      url: '#',
+      url: 'https://techcrunch.example.com/remote-learning-2025',
       image: '/api/placeholder/400/200'
     }
   ];
+
+  // Default snippet for parent/non-technical audience (English)
+  const parentSnippet = 'Tools to help your child track learning progress, view assignments and grades — clear, stress-free home–school communication.';
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -109,6 +114,36 @@ const News = () => {
 
     fetchNews();
   }, []);
+
+  const handleSubscribe = async () => {
+    setSubscribeStatus(null);
+    const apiUrl = import.meta.env.VITE_NEWSLETTER_API_URL;
+    // basic email validation
+    if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      setSubscribeStatus('error');
+      return;
+    }
+
+    try {
+      if (apiUrl) {
+        const res = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        if (!res.ok) throw new Error('Network response was not ok');
+        setSubscribeStatus('success');
+      } else {
+        // fallback to mailto so user's email client sends an email
+        const mailto = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent('Subscribe to newsletter')}&body=${encodeURIComponent('Please subscribe me to the newsletter.')}`;
+        window.location.href = mailto;
+        setSubscribeStatus('success');
+      }
+    } catch (err) {
+      console.error('Subscribe failed', err);
+      setSubscribeStatus('error');
+    }
+  };
 
   const filteredArticles = activeTab === 'all' 
     ? articles 
@@ -151,6 +186,31 @@ const News = () => {
             </div>
 
             {/* News Articles List */}
+            {/* Status (loading / error / empty) */}
+            {loading && (
+              <div className="mb-4 text-center">
+                <div className="inline-flex items-center px-4 py-2 bg-blue-50 text-blue-700 rounded">
+                  <svg className="w-4 h-4 mr-2 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                  </svg>
+                  Loading articles...
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded">
+                Failed to load news: {error}
+              </div>
+            )}
+
+            {!loading && filteredArticles.length === 0 && (
+              <div className="mb-4 p-6 text-center text-gray-600 bg-white border border-gray-100 rounded">
+                No articles found.
+              </div>
+            )}
+
             <div className="space-y-6">
               {filteredArticles.map(article => (
                 <article key={article.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
@@ -174,15 +234,17 @@ const News = () => {
                     </h2>
                     
                     <p className="text-gray-600 mb-4 leading-relaxed">
-                      {article.excerpt}
+                      {article.excerpt || parentSnippet}
                     </p>
                     
                     <div className="flex items-center justify-between">
                       <a 
                         href={article.url} 
                         className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                        target="_blank"
+                        rel="noopener noreferrer"
                       >
-                        Read full article
+                        Read more
                         <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
@@ -311,7 +373,7 @@ const News = () => {
             </div>
 
             {/* Newsletter Subscription */}
-            <div className="bg-blue-50 rounded-lg border border-blue-200 p-6">
+              <div className="bg-blue-50 rounded-lg border border-blue-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 Stay Updated
               </h3>
@@ -319,40 +381,32 @@ const News = () => {
                 Get the latest education news and insights delivered to your inbox weekly.
               </p>
               <div className="space-y-3">
-                <input
-                  type="email"
-                  placeholder="Enter your email address"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <button className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                  Subscribe to Newsletter
-                </button>
+                  <input
+                    type="email"
+                    placeholder="Enter your email address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <button
+                    onClick={() => handleSubscribe()}
+                    className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                  >
+                    Subscribe
+                  </button>
+                  {subscribeStatus === 'success' && (
+                    <div className="text-sm text-green-700">Subscription successful — check your inbox.</div>
+                  )}
+                  {subscribeStatus === 'error' && (
+                    <div className="text-sm text-red-700">Subscription failed — please try again.</div>
+                  )}
               </div>
               <p className="text-xs text-gray-500 mt-3">
                 No spam, unsubscribe at any time.
               </p>
             </div>
 
-            {/* Quick Links */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Quick Links
-              </h3>
-              <div className="space-y-2">
-                <a href="#" className="block text-blue-600 hover:text-blue-800 text-sm py-1">
-                  Education Policy Updates
-                </a>
-                <a href="#" className="block text-blue-600 hover:text-blue-800 text-sm py-1">
-                  Teaching Resources
-                </a>
-                <a href="#" className="block text-blue-600 hover:text-blue-800 text-sm py-1">
-                  Research Publications
-                </a>
-                <a href="#" className="block text-blue-600 hover:text-blue-800 text-sm py-1">
-                  Professional Development
-                </a>
-              </div>
-            </div>
+            {/* Quick Links removed as requested */}
           </div>
         </div>
       </div>

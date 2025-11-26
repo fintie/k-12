@@ -23,6 +23,7 @@ const Layout = ({ children, user }) => {
   const navigation = [
     { name: 'Home', href: '/home', icon: BookOpen },
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
+    { name: 'News', href: '/news', icon: FileText },
     { name: 'Practice', href: '/practice', icon: BookOpen },
     { name: 'Exam Builder', href: '/exam-builder', icon: FileText },
     { name: 'Question Builder', href: '/question-builder', icon: PlusCircle },
