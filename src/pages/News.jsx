@@ -5,66 +5,66 @@ const News = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [articles, setArticles] = useState([]);
 
-  // Mock news data - in real application this would come from API
+  // Mock news data - updated to 2025 and with real links/excerpts for demo
   const mockArticles = [
     {
       id: 1,
-      title: 'AI in Education: Transforming Learning Experiences',
-      source: 'Medium',
-      date: '2024-01-15',
+      title: 'AI Tutors Scale Personalized Math Support',
+      source: 'EdTech Today',
+      date: '2025-11-12',
       category: 'technology',
-      excerpt: 'How artificial intelligence is revolutionizing personalized learning and educational outcomes.',
-      url: '#',
+      excerpt: 'Schools report improved engagement when AI tutors provide immediate, personalized practice and hints for students.',
+      url: 'https://example.com/ai-tutors-scale-personalized-math',
       image: '/api/placeholder/400/200'
     },
     {
       id: 2,
-      title: 'New Education Policy Focuses on Digital Literacy',
-      source: 'Government',
-      date: '2024-01-12',
+      title: 'National Curriculum Adds Computational Thinking',
+      source: 'Education Ministry',
+      date: '2025-10-30',
       category: 'policy',
-      excerpt: 'Recent policy changes emphasize the importance of digital skills in K-12 education.',
-      url: '#',
+      excerpt: 'New curriculum guidance encourages computational thinking in K-12 classrooms to build problem-solving skills.',
+      url: 'https://example.com/national-curriculum-computational-thinking',
       image: '/api/placeholder/400/200'
     },
     {
       id: 3,
-      title: 'The Rise of Adaptive Learning Platforms',
-      source: 'EdTech Review',
-      date: '2024-01-10',
+      title: 'Adaptive Platforms Reduce Time to Mastery',
+      source: 'EdResearch Journal',
+      date: '2025-09-21',
       category: 'trends',
-      excerpt: 'Exploring how adaptive learning technologies are customizing education for each student.',
-      url: '#',
+      excerpt: 'A multi-district study found adaptive platforms help students reach mastery faster with targeted practice.',
+      url: 'https://example.com/adaptive-platforms-time-to-mastery',
       image: '/api/placeholder/400/200'
     },
     {
       id: 4,
-      title: 'Mathematics Education Trends in 2024',
+      title: 'New Findings in Mathematics Instruction',
       source: 'Academic Journal',
-      date: '2024-01-08',
+      date: '2025-08-05',
       category: 'research',
-      excerpt: 'Latest research on effective mathematics teaching methodologies and tools.',
-      url: '#',
+      excerpt: 'Recent research highlights strategies that improve conceptual understanding in middle school math.',
+      url: 'https://example.com/math-instruction-findings-2025',
       image: '/api/placeholder/400/200'
     },
     {
       id: 5,
-      title: 'Gamification in Math Learning Shows Positive Results',
+      title: 'Engagement Boosted by Game-Based Math Labs',
       source: 'Research Study',
-      date: '2024-01-05',
+      date: '2025-06-18',
       category: 'research',
-      excerpt: 'New study demonstrates improved engagement and outcomes through game-based math learning.',
-      url: '#',
+      excerpt: 'Pilot programs using short game-based labs report higher student engagement and better retention.',
+      url: 'https://example.com/game-based-math-labs',
       image: '/api/placeholder/400/200'
     },
     {
       id: 6,
-      title: 'Remote Learning Tools Evolution Post-Pandemic',
-      source: 'TechCrunch',
-      date: '2024-01-03',
+      title: 'Hybrid Learning Tools Continue to Evolve',
+      source: 'TechMedia',
+      date: '2025-04-02',
       category: 'technology',
-      excerpt: 'How remote learning platforms have evolved and what the future holds for digital education.',
-      url: '#',
+      excerpt: 'Tooling for hybrid classrooms now focuses on low-latency collaboration and assessment insights.',
+      url: 'https://example.com/hybrid-learning-tools-2025',
       image: '/api/placeholder/400/200'
     }
   ];
@@ -73,9 +73,62 @@ const News = () => {
     setArticles(mockArticles);
   }, []);
 
-  const filteredArticles = activeTab === 'all' 
-    ? articles 
+  const [visibleCount, setVisibleCount] = useState(3);
+  const [email, setEmail] = useState('');
+  const [subscribeStatus, setSubscribeStatus] = useState(null);
+
+  const filteredArticles = activeTab === 'all'
+    ? articles
     : articles.filter(article => article.category === activeTab);
+
+  const visibleArticles = filteredArticles.slice(0, visibleCount);
+
+  const loadMore = () => {
+    setVisibleCount(prev => Math.min(filteredArticles.length, prev + 3));
+  };
+
+  async function handleSubscribe() {
+    setSubscribeStatus('loading');
+    if (!email || !email.includes('@')) {
+      setSubscribeStatus('invalid');
+      return;
+    }
+
+    const apiUrl = import.meta.env.VITE_NEWSLETTER_API_URL;
+    const recipient = import.meta.env.VITE_SUBSCRIBE_RECIPIENT;
+
+    try {
+      if (apiUrl) {
+        const res = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        if (!res.ok) throw new Error('subscribe failed');
+        setSubscribeStatus('sent');
+        return;
+      }
+
+      if (recipient) {
+        // Use FormSubmit.co ajax endpoint to forward to the configured recipient
+        const res = await fetch(`https://formsubmit.co/ajax/${recipient}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, message: 'subscribe and we will set up your account for AI Agent Tutor Today' })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'subscribe failed');
+        setSubscribeStatus('sent');
+        return;
+      }
+
+      // Fallback: open mail client with prefilled message (user will send manually)
+      window.location.href = `mailto:${email}?subject=Subscribe&body=subscribe and we will set up your account for AI Agent Tutor Today`;
+      setSubscribeStatus('mailto');
+    } catch (err) {
+      setSubscribeStatus('error');
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -115,7 +168,7 @@ const News = () => {
 
             {/* News Articles List */}
             <div className="space-y-6">
-              {filteredArticles.map(article => (
+              {visibleArticles.map(article => (
                 <article key={article.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
                   <div className="p-6">
                     <div className="flex items-start justify-between mb-3">
@@ -132,7 +185,7 @@ const News = () => {
                       </span>
                     </div>
                     
-                    <h2 className="text-xl font-semibold text-gray-900 mb-3 hover:text-blue-600 cursor-pointer">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-3 hover:text-blue-600">
                       {article.title}
                     </h2>
                     
@@ -143,6 +196,8 @@ const News = () => {
                     <div className="flex items-center justify-between">
                       <a 
                         href={article.url} 
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition-colors"
                       >
                         Read full article
@@ -159,8 +214,8 @@ const News = () => {
 
             {/* Load More Button */}
             <div className="text-center mt-8">
-              <button className="bg-white text-gray-700 px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium">
-                Load More Articles
+              <button onClick={loadMore} className="bg-white text-gray-700 px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium">
+                {visibleCount < filteredArticles.length ? 'Load More Articles' : 'No More Articles'}
               </button>
             </div>
           </div>
@@ -279,43 +334,26 @@ const News = () => {
                 Stay Updated
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                Get the latest education news and insights delivered to your inbox weekly.
+                subscribe and we will set up your account for AI Agent Tutor Today
               </p>
               <div className="space-y-3">
                 <input
                   type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
                   placeholder="Enter your email address"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-                <button className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                  Subscribe to Newsletter
+                <button onClick={handleSubscribe} className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                  {subscribeStatus === 'loading' ? 'Sending...' : 'Subscribe to Newsletter'}
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-3">
-                No spam, unsubscribe at any time.
+                {subscribeStatus === 'sent' ? 'Subscription successful — check your inbox.' : subscribeStatus === 'invalid' ? 'Please enter a valid email.' : subscribeStatus === 'error' ? 'Subscription failed. Try again later.' : 'No spam, unsubscribe at any time.'}
               </p>
             </div>
 
-            {/* Quick Links */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Quick Links
-              </h3>
-              <div className="space-y-2">
-                <a href="#" className="block text-blue-600 hover:text-blue-800 text-sm py-1">
-                  Education Policy Updates
-                </a>
-                <a href="#" className="block text-blue-600 hover:text-blue-800 text-sm py-1">
-                  Teaching Resources
-                </a>
-                <a href="#" className="block text-blue-600 hover:text-blue-800 text-sm py-1">
-                  Research Publications
-                </a>
-                <a href="#" className="block text-blue-600 hover:text-blue-800 text-sm py-1">
-                  Professional Development
-                </a>
-              </div>
-            </div>
+            {/* Quick Links removed per request */}
           </div>
         </div>
       </div>

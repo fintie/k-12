@@ -1,7 +1,50 @@
 // src/pages/Homepage.jsx
-import React from 'react';
+import React, { useState } from 'react';
 
 const Homepage = () => {
+  const [email, setEmail] = useState('');
+  const [subscribeStatus, setSubscribeStatus] = useState(null);
+
+  async function handleSubscribe() {
+    setSubscribeStatus('loading');
+    if (!email || !email.includes('@')) {
+      setSubscribeStatus('invalid');
+      return;
+    }
+
+    const apiUrl = import.meta.env.VITE_NEWSLETTER_API_URL;
+    const recipient = import.meta.env.VITE_SUBSCRIBE_RECIPIENT;
+
+    try {
+      if (apiUrl) {
+        const res = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        if (!res.ok) throw new Error('subscribe failed');
+        setSubscribeStatus('sent');
+        return;
+      }
+
+      if (recipient) {
+        const res = await fetch(`https://formsubmit.co/ajax/${recipient}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, message: 'subscribe and we will set up your account for AI Agent Tutor Today' })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'subscribe failed');
+        setSubscribeStatus('sent');
+        return;
+      }
+
+      window.location.href = `mailto:${email}?subject=Subscribe&body=subscribe and we will set up your account for AI Agent Tutor Today`;
+      setSubscribeStatus('mailto');
+    } catch (err) {
+      setSubscribeStatus('error');
+    }
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Navigation Bar */}
@@ -48,6 +91,27 @@ const Homepage = () => {
               Learn More
             </a>
           </div>
+        </div>
+      </section>
+
+      {/* Subscribe Section (Homepage) */}
+      <section className="py-12 bg-blue-50">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Stay in the loop</h2>
+          <p className="text-gray-600 mb-6">subscribe and we will set up your account for AI Agent Tutor Today</p>
+          <div className="sm:flex sm:justify-center sm:space-x-3">
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="Enter your email"
+              className="w-full sm:w-2/3 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button onClick={handleSubscribe} className="mt-3 sm:mt-0 w-full sm:w-auto bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700">
+              {subscribeStatus === 'loading' ? 'Sending...' : 'Subscribe'}
+            </button>
+          </div>
+          <p className="text-sm text-gray-500 mt-3">{subscribeStatus === 'sent' ? 'Subscription successful — check your inbox.' : subscribeStatus === 'invalid' ? 'Please enter a valid email.' : subscribeStatus === 'error' ? 'Subscription failed. Try again later.' : ''}</p>
         </div>
       </section>
 
