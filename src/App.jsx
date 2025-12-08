@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { HashRouter as Router, Routes, Route } from 'react-router-dom'
 import { useState } from 'react'
 import Layout from './components/layout/Layout'
 import Dashboard from './pages/Dashboard'
@@ -29,7 +29,7 @@ function App() {
   })
 
   return (
-    <Router basename="/k-12">
+    <Router>
       <div className="min-h-screen bg-slate-50">
         <Layout user={user}>
           <Routes>
