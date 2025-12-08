@@ -43,7 +43,7 @@ const News = () => {
     },
     {
       id: 4,
-      title: 'Mathematics Education Trends in 2024',
+      title: 'Mathematics Education Trends in 2025',
       source: 'Academic Journal',
       date: '2025-07-30',
       category: 'research',
