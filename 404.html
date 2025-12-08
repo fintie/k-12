@@ -1,14 +1,25 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MathTutor Pro - K-12 Math Learning Platform</title>
-    <script type="module" crossorigin src="/k-12/assets/index-JV-PZhc9.js"></script>
-    <link rel="stylesheet" crossorigin href="/k-12/assets/index-Dumbh0xp.css">
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
-</html>
+<meta charset="utf-8">
+<meta http-equiv="refresh" content="0;url=/k-12/#">
+<script>
+  (function(){
+    try {
+      var path = window.location.pathname || '/';
+      var search = window.location.search || '';
+      var hash = window.location.hash || '';
+      // Ensure base is /k-12 — if site served at root adjust accordingly
+      var base = '/k-12';
+      // If already contains hash, just reload
+      if (path.indexOf('#') !== -1) {
+        return;
+      }
+      var target = base + '/#' + path + search + hash;
+      // Normalize double slashes
+      target = target.replace(/([^:])///g, '$1/');
+      window.location.replace(target);
+    } catch (e) {
+      console.error(e);
+    }
+  })();
+</script>
+<title>Redirecting…</title>
