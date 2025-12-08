@@ -9,12 +9,17 @@ const RegisterPage = () => {
   const navigate = useNavigate()
   const { user, register, error, clearError } = useAuth()
   const [role, setRole] = useState('student')
+  const [step, setStep] = useState(1)
   const [form, setForm] = useState({
     username: '',
     password: '',
-    displayName: '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    school: '',
     grade: '',
-    subject: ''
+    preferredDifficulty: 'moderate',
+    preferredSubject: ''
   })
   const [submitting, setSubmitting] = useState(false)
   const [localError, setLocalError] = useState('')
@@ -28,26 +33,79 @@ const RegisterPage = () => {
   useEffect(() => {
     clearError()
     setLocalError('')
+    setStep(1)
   }, [role, clearError])
+
+  useEffect(() => {
+    clearError()
+    setLocalError('')
+  }, [step, clearError])
 
   const handleChange = (field) => (event) => {
     setForm((prev) => ({ ...prev, [field]: event.target.value }))
   }
 
+  const validateStepOne = () => {
+    const username = form.username.trim()
+    const password = form.password.trim()
+    const firstName = form.firstName.trim()
+    const lastName = form.lastName.trim()
+    const email = form.email.trim()
+
+    if (!username || !password) {
+      setLocalError('Username and password are required')
+      return false
+    }
+    if (!firstName || !lastName || !email) {
+      setLocalError('First name, last name, and email are required')
+      return false
+    }
+    return true
+  }
+
+  const validateStepTwo = () => {
+    const school = form.school.trim()
+    const grade = form.grade.trim()
+    const preferredDifficulty = form.preferredDifficulty.trim()
+    const preferredSubject = form.preferredSubject.trim()
+
+    if (!school || !grade || !preferredDifficulty || !preferredSubject) {
+      setLocalError('Please complete school, grade, difficulty, and subject preferences')
+      return false
+    }
+    return true
+  }
+
+  const handleNextStep = (event) => {
+    event?.preventDefault()
+    setLocalError('')
+    clearError()
+    if (validateStepOne()) {
+      setStep(2)
+    }
+  }
+
   const handleSubmit = async (event) => {
     event.preventDefault()
+    if (step === 1) {
+      handleNextStep()
+      return
+    }
     setSubmitting(true)
     setLocalError('')
     clearError()
 
     const username = form.username.trim()
     const password = form.password.trim()
-    const displayName = form.displayName.trim() || username
+    const firstName = form.firstName.trim()
+    const lastName = form.lastName.trim()
+    const email = form.email.trim()
+    const school = form.school.trim()
     const grade = form.grade.trim()
-    const subject = form.subject.trim()
+    const preferredDifficulty = form.preferredDifficulty.trim()
+    const preferredSubject = form.preferredSubject.trim()
 
-    if (!username || !password) {
-      setLocalError('Username and password are required')
+    if (!validateStepOne() || !validateStepTwo()) {
       setSubmitting(false)
       return
     }
@@ -57,9 +115,13 @@ const RegisterPage = () => {
         username,
         password,
         role,
-        displayName,
-        grade: role === 'student' ? grade : undefined,
-        subject: role === 'tutor' ? subject : undefined
+        firstName,
+        lastName,
+        email,
+        school,
+        grade,
+        preferredDifficulty,
+        preferredSubject
       })
       navigate('/login', { replace: true })
     } catch (authError) {
@@ -70,10 +132,14 @@ const RegisterPage = () => {
   }
 
   const helperText = useMemo(() => {
-    return role === 'student'
-      ? 'Create a student account to access the Student Meetings page.'
-      : 'Create a tutor account to access the Tutor Meetings page.'
-  }, [role])
+    const base =
+      role === 'student'
+        ? 'Create a student account to access the Student Meetings page.'
+        : 'Create a tutor account to access the Tutor Meetings page.'
+    return step === 1
+      ? `${base} Step 1: account basics.`
+      : 'Step 2: finish your learning profile to personalize practice.'
+  }, [role, step])
 
   const effectiveError = localError || error
 
@@ -105,60 +171,124 @@ const RegisterPage = () => {
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
-          <div>
-            <Label htmlFor="username">Username</Label>
-            <Input
-              id="username"
-              value={form.username}
-              onChange={handleChange('username')}
-              placeholder="Enter a username"
-              autoComplete="username"
-            />
+          <div className="flex items-center justify-between text-sm text-slate-600">
+            <span>Step {step} of 2</span>
+            {step === 2 && (
+              <Button type="button" variant="ghost" size="sm" onClick={() => setStep(1)}>
+                Back
+              </Button>
+            )}
           </div>
 
-          <div>
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={form.password}
-              onChange={handleChange('password')}
-              placeholder="Enter a password"
-              autoComplete="new-password"
-            />
-          </div>
+          {step === 1 && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  value={form.username}
+                  onChange={handleChange('username')}
+                  placeholder="Enter a username"
+                  autoComplete="username"
+                />
+              </div>
 
-          <div>
-            <Label htmlFor="displayName">Display Name</Label>
-            <Input
-              id="displayName"
-              value={form.displayName}
-              onChange={handleChange('displayName')}
-              placeholder="e.g. Alex Johnson"
-            />
-          </div>
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={form.password}
+                  onChange={handleChange('password')}
+                  placeholder="Enter a password"
+                  autoComplete="new-password"
+                />
+              </div>
 
-          {role === 'student' && (
-            <div>
-              <Label htmlFor="grade">Grade (optional)</Label>
-              <Input
-                id="grade"
-                value={form.grade}
-                onChange={handleChange('grade')}
-                placeholder="e.g. Grade 8"
-              />
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input
+                    id="firstName"
+                    value={form.firstName}
+                    onChange={handleChange('firstName')}
+                    placeholder="e.g. Alex"
+                    autoComplete="given-name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    value={form.lastName}
+                    onChange={handleChange('lastName')}
+                    placeholder="e.g. Johnson"
+                    autoComplete="family-name"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={form.email}
+                  onChange={handleChange('email')}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                />
+              </div>
             </div>
           )}
 
-          {role === 'tutor' && (
-            <div>
-              <Label htmlFor="subject">Subject Focus (optional)</Label>
-              <Input
-                id="subject"
-                value={form.subject}
-                onChange={handleChange('subject')}
-                placeholder="e.g. Algebra II"
-              />
+          {step === 2 && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="school">School</Label>
+                <Input
+                  id="school"
+                  value={form.school}
+                  onChange={handleChange('school')}
+                  placeholder="Enter your school name"
+                  autoComplete="organization"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="grade">Grade</Label>
+                  <Input
+                    id="grade"
+                    value={form.grade}
+                    onChange={handleChange('grade')}
+                    placeholder="e.g. Grade 8"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="preferredDifficulty">Practice Difficulty</Label>
+                  <select
+                    id="preferredDifficulty"
+                    value={form.preferredDifficulty}
+                    onChange={handleChange('preferredDifficulty')}
+                    className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="moderate">Moderate</option>
+                    <option value="advanced">Advanced</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="preferredSubject">Favorite Subject to Practice</Label>
+                <Input
+                  id="preferredSubject"
+                  value={form.preferredSubject}
+                  onChange={handleChange('preferredSubject')}
+                  placeholder="e.g. Algebra, Geometry"
+                />
+              </div>
             </div>
           )}
 
@@ -168,9 +298,20 @@ const RegisterPage = () => {
             </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? 'Creating account...' : 'Sign up'}
-          </Button>
+          {step === 1 ? (
+            <Button type="button" className="w-full" onClick={handleNextStep}>
+              Continue to profile
+            </Button>
+          ) : (
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" className="w-1/3" onClick={() => setStep(1)} disabled={submitting}>
+                Back
+              </Button>
+              <Button type="submit" className="flex-1" disabled={submitting}>
+                {submitting ? 'Creating account...' : 'Create account'}
+              </Button>
+            </div>
+          )}
         </form>
 
         <div className="mt-4 text-center text-xs text-slate-500">

@@ -41,6 +41,18 @@ const StudentMeeting = () => {
   const onIceCandidateRef = useRef(() => {})
   const meetingTimeoutRef = useRef(null)
   const hangUpRef = useRef(null)
+  const formatContactName = useCallback(
+    (participant) =>
+      [participant?.firstName, participant?.lastName].filter(Boolean).join(' ') ||
+      participant?.displayName ||
+      participant?.username ||
+      'Tutor',
+    []
+  )
+  const formatSubject = useCallback(
+    (participant) => participant?.preferredSubject || participant?.subject || 'Tutor',
+    []
+  )
 
   const handlePeerIceCandidate = useCallback(
     (candidate) => {
@@ -359,8 +371,8 @@ const StudentMeeting = () => {
 
         const mapped = tutors.map((tutor) => ({
           id: tutor.id,
-          name: tutor.displayName || tutor.username,
-          subject: tutor.subject || 'Tutor',
+          name: formatContactName(tutor),
+          subject: formatSubject(tutor),
           avatar: '/api/placeholder/40/40',
           lastMessageAt: null
         }))
@@ -402,7 +414,7 @@ const StudentMeeting = () => {
         }
       }
     },
-    [currentUserId]
+    [currentUserId, formatContactName, formatSubject]
   )
 
   useEffect(() => {

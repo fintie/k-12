@@ -27,10 +27,32 @@ const request = async (path, options) => {
   return data
 }
 
-export const registerUser = async ({ username, password, role, displayName, grade, subject }) => {
+export const registerUser = async ({
+  username,
+  password,
+  role,
+  firstName,
+  lastName,
+  email,
+  school,
+  grade,
+  preferredDifficulty,
+  preferredSubject
+}) => {
   return request('/users/register', {
     method: 'POST',
-    body: JSON.stringify({ username, password, role, displayName, grade, subject })
+    body: JSON.stringify({
+      username,
+      password,
+      role,
+      firstName,
+      lastName,
+      email,
+      school,
+      grade,
+      preferredDifficulty,
+      preferredSubject
+    })
   })
 }
 

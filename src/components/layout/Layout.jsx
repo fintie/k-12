@@ -55,12 +55,16 @@ const Layout = ({ children, profile }) => {
   }, [user])
 
   const isActive = (href) => location.pathname === href
-  const displayName = user?.displayName || user?.username || 'Guest'
+  const displayName =
+    [user?.firstName, user?.lastName].filter(Boolean).join(' ') ||
+    user?.displayName ||
+    user?.username ||
+    'Guest'
   const secondaryLine = user
     ? user.role === 'student'
-      ? user?.grade || 'Student'
+      ? user?.grade || user?.school || 'Student'
       : user?.role === 'tutor'
-        ? user?.subject || 'Tutor'
+        ? user?.preferredSubject || user?.subject || 'Tutor'
         : ''
     : 'Browse & explore'
   const roleLabel = user?.role || 'Guest'
@@ -192,7 +196,7 @@ const Layout = ({ children, profile }) => {
                 <Menu className="h-5 w-5" />
               </Button>
               <span className="text-sm font-medium text-slate-600">
-                {workspaceLabel} · {displayName}
+                {workspaceLabel} - {displayName}
               </span>
             </div>
             {isAuthenticated ? (

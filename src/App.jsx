@@ -41,7 +41,15 @@ function App() {
   const { user: authUser } = useAuth()
   const [profile, setProfile] = useState({
     name: 'Alex Johnson',
+    firstName: 'Alex',
+    lastName: 'Johnson',
+    email: '',
+    school: '',
     grade: '8th Grade',
+    preferences: {
+      difficulty: 'moderate',
+      subject: 'Algebra'
+    },
     avatar: '/api/placeholder/40/40',
     progress: {
       overall: 75,
@@ -56,10 +64,20 @@ function App() {
 
   useEffect(() => {
     if (!authUser) return
+    const fullName = [authUser.firstName, authUser.lastName].filter(Boolean).join(' ')
     setProfile((prev) => ({
       ...prev,
-      name: authUser.displayName || authUser.username || prev.name,
-      grade: authUser.role === 'student' ? authUser.grade || prev.grade : prev.grade,
+      name: fullName || authUser.displayName || authUser.username || prev.name,
+      firstName: authUser.firstName || prev.firstName,
+      lastName: authUser.lastName || prev.lastName,
+      email: authUser.email || prev.email,
+      school: authUser.school || prev.school,
+      grade: authUser.grade || prev.grade,
+      preferences: {
+        ...(prev.preferences || {}),
+        difficulty: authUser.preferredDifficulty || prev.preferences?.difficulty || 'moderate',
+        subject: authUser.preferredSubject || prev.preferences?.subject || 'Algebra'
+      }
     }))
   }, [authUser])
 
@@ -70,13 +88,55 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route element={<ProtectedLayout profile={profile} />}>
           <Route path="/home" element={<HomePage />} />
-          <Route path="/dashboard" element={<Dashboard user={profile} />} />
           <Route path="/news" element={<News />} />
-          <Route path="/practice" element={<Practice />} />
-          <Route path="/exam-builder" element={<ExamBuilder />} />
-          <Route path="/question-builder" element={<QuestionBuilder />} />
-          <Route path="/study-groups" element={<StudyGroups />} />
-          <Route path="/flashcards" element={<Flashcards />} />
+          <Route
+            path="/dashboard"
+            element={
+              <LoginGuard featureName="Dashboard">
+                <Dashboard user={profile} />
+              </LoginGuard>
+            }
+          />
+          <Route
+            path="/practice"
+            element={
+              <LoginGuard featureName="Practice">
+                <Practice />
+              </LoginGuard>
+            }
+          />
+          <Route
+            path="/exam-builder"
+            element={
+              <LoginGuard featureName="Exam Builder">
+                <ExamBuilder />
+              </LoginGuard>
+            }
+          />
+          <Route
+            path="/question-builder"
+            element={
+              <LoginGuard featureName="Question Builder">
+                <QuestionBuilder />
+              </LoginGuard>
+            }
+          />
+          <Route
+            path="/study-groups"
+            element={
+              <LoginGuard featureName="Study Groups">
+                <StudyGroups />
+              </LoginGuard>
+            }
+          />
+          <Route
+            path="/flashcards"
+            element={
+              <LoginGuard featureName="Flashcards">
+                <Flashcards />
+              </LoginGuard>
+            }
+          />
           <Route
             path="/student-meetings"
             element={
@@ -97,7 +157,14 @@ function App() {
               </LoginGuard>
             }
           />
-          <Route path="/settings" element={<Settings user={profile} setUser={setProfile} />} />
+          <Route
+            path="/settings"
+            element={
+              <LoginGuard featureName="Settings">
+                <Settings user={profile} setUser={setProfile} />
+              </LoginGuard>
+            }
+          />
         </Route>
         <Route path="/" element={<RedirectByRole />} />
         <Route path="*" element={<RedirectByRole />} />

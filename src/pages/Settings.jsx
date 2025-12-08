@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -5,9 +6,76 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { User, Bell, Shield, Palette, BookOpen, Save } from 'lucide-react'
+import { User, Bell, Shield, BookOpen, Save } from 'lucide-react'
 
 const Settings = ({ user, setUser }) => {
+  const [form, setForm] = useState({
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    email: user?.email || '',
+    school: user?.school || '',
+    grade: user?.grade || '',
+    preferredDifficulty:
+      user?.preferences?.difficulty || user?.preferredDifficulty || 'moderate',
+    preferredSubject:
+      user?.preferences?.subject || user?.preferredSubject || user?.subject || '',
+  })
+
+  useEffect(() => {
+    setForm({
+      firstName: user?.firstName || '',
+      lastName: user?.lastName || '',
+      email: user?.email || '',
+      school: user?.school || '',
+      grade: user?.grade || '',
+      preferredDifficulty:
+        user?.preferences?.difficulty || user?.preferredDifficulty || 'moderate',
+      preferredSubject:
+        user?.preferences?.subject || user?.preferredSubject || user?.subject || '',
+    })
+  }, [user])
+
+  const handleChange = (field) => (valueOrEvent) => {
+    const nextValue =
+      typeof valueOrEvent === 'string' ? valueOrEvent : valueOrEvent?.target?.value || ''
+    setForm((prev) => ({ ...prev, [field]: nextValue }))
+  }
+
+  const initials = useMemo(() => {
+    const letters = [form.firstName, form.lastName]
+      .filter(Boolean)
+      .map((part) => part[0])
+    if (letters.length) return letters.join('').toUpperCase()
+    if (user?.name) {
+      return user.name
+        .split(' ')
+        .map((part) => part[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
+    }
+    return 'NG'
+  }, [form.firstName, form.lastName, user?.name])
+
+  const handleSave = () => {
+    const fullName = [form.firstName, form.lastName].filter(Boolean).join(' ')
+    setUser((prev) => ({
+      ...prev,
+      ...form,
+      name: fullName || prev?.name || 'User',
+      grade: form.grade || prev?.grade || '',
+      school: form.school || prev?.school || '',
+      email: form.email || prev?.email || '',
+      firstName: form.firstName,
+      lastName: form.lastName,
+      preferences: {
+        ...(prev?.preferences || {}),
+        difficulty: form.preferredDifficulty || prev?.preferences?.difficulty,
+        subject: form.preferredSubject || prev?.preferences?.subject,
+      },
+    }))
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -28,8 +96,8 @@ const Settings = ({ user, setUser }) => {
           <CardContent className="space-y-6">
             <div className="flex items-center space-x-4">
               <Avatar className="h-20 w-20">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="text-lg">{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                <AvatarImage src={user?.avatar} alt={user?.name || 'User avatar'} />
+                <AvatarFallback className="text-lg">{initials}</AvatarFallback>
               </Avatar>
               <div>
                 <Button variant="outline" size="sm">Change Photo</Button>
@@ -40,40 +108,57 @@ const Settings = ({ user, setUser }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="firstName">First Name</Label>
-                <Input id="firstName" defaultValue="Alex" />
+                <Input
+                  id="firstName"
+                  value={form.firstName}
+                  onChange={handleChange('firstName')}
+                  placeholder="First name"
+                  autoComplete="given-name"
+                />
               </div>
               <div>
                 <Label htmlFor="lastName">Last Name</Label>
-                <Input id="lastName" defaultValue="Johnson" />
+                <Input
+                  id="lastName"
+                  value={form.lastName}
+                  onChange={handleChange('lastName')}
+                  placeholder="Last name"
+                  autoComplete="family-name"
+                />
               </div>
             </div>
 
             <div>
               <Label htmlFor="email">Email Address</Label>
-              <Input id="email" type="email" defaultValue="alex.johnson@email.com" />
+              <Input
+                id="email"
+                type="email"
+                value={form.email}
+                onChange={handleChange('email')}
+                placeholder="you@example.com"
+                autoComplete="email"
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="grade">Grade Level</Label>
-                <Select defaultValue="8">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="6">6th Grade</SelectItem>
-                    <SelectItem value="7">7th Grade</SelectItem>
-                    <SelectItem value="8">8th Grade</SelectItem>
-                    <SelectItem value="9">9th Grade</SelectItem>
-                    <SelectItem value="10">10th Grade</SelectItem>
-                    <SelectItem value="11">11th Grade</SelectItem>
-                    <SelectItem value="12">12th Grade</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input
+                  id="grade"
+                  value={form.grade}
+                  onChange={handleChange('grade')}
+                  placeholder="e.g. Grade 8"
+                />
               </div>
               <div>
                 <Label htmlFor="school">School</Label>
-                <Input id="school" placeholder="Enter your school name" />
+                <Input
+                  id="school"
+                  value={form.school}
+                  onChange={handleChange('school')}
+                  placeholder="Enter your school name"
+                  autoComplete="organization"
+                />
               </div>
             </div>
           </CardContent>
@@ -120,7 +205,10 @@ const Settings = ({ user, setUser }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <Label htmlFor="difficulty">Default Difficulty</Label>
-              <Select defaultValue="moderate">
+              <Select
+                value={form.preferredDifficulty}
+                onValueChange={handleChange('preferredDifficulty')}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -133,17 +221,12 @@ const Settings = ({ user, setUser }) => {
             </div>
             <div>
               <Label htmlFor="subject">Favorite Subject</Label>
-              <Select defaultValue="algebra">
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="algebra">Algebra</SelectItem>
-                  <SelectItem value="geometry">Geometry</SelectItem>
-                  <SelectItem value="statistics">Statistics</SelectItem>
-                  <SelectItem value="calculus">Calculus</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input
+                id="subject"
+                value={form.preferredSubject}
+                onChange={handleChange('preferredSubject')}
+                placeholder="e.g. Algebra"
+              />
             </div>
           </div>
 
@@ -247,7 +330,7 @@ const Settings = ({ user, setUser }) => {
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button className="bg-indigo-600 hover:bg-indigo-700">
+        <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={handleSave}>
           <Save className="mr-2 h-4 w-4" />
           Save Changes
         </Button>

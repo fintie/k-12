@@ -38,6 +38,14 @@ const TutorMeeting = () => {
   const { user: authUser } = useAuth()
   const currentUserId = authUser?.id
   const currentUserRole = authUser?.role
+  const formatStudentName = useCallback(
+    (participant) =>
+      [participant?.firstName, participant?.lastName].filter(Boolean).join(' ') ||
+      participant?.displayName ||
+      participant?.username ||
+      'Student',
+    []
+  )
   const activeMeetingRef = useRef(null)
   const pendingIceCandidatesRef = useRef([])
   const processedRemoteCandidatesRef = useRef(new Set())
@@ -332,7 +340,7 @@ const TutorMeeting = () => {
             student.id,
             {
               id: student.id,
-              name: student.displayName || student.username,
+              name: formatStudentName(student),
               grade: student.grade || 'Student',
               avatar: '/api/placeholder/40/40',
             },
@@ -384,7 +392,7 @@ const TutorMeeting = () => {
         }
       }
     },
-    [currentUserId]
+    [currentUserId, formatStudentName]
   )
 
   useEffect(() => {
