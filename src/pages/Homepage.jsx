@@ -1,5 +1,6 @@
 // src/pages/Homepage.jsx
 import React, { useState } from 'react';
+import ChatbotWidget from '../components/ChatbotWidget';
 
 const Homepage = () => {
   const [email, setEmail] = useState('');
@@ -339,6 +340,8 @@ const Homepage = () => {
           <p className="text-gray-400">© 2025 MathTutor Pro. All rights reserved.</p>
         </div>
       </footer>
+
+      <ChatbotWidget />
     </div>
   );
 };
