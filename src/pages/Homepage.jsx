@@ -1,6 +1,7 @@
 // src/pages/Homepage.jsx
 import React, { useState } from 'react';
 import ChatbotWidget from '../components/ChatbotWidget';
+import { send as emailjsSend } from '@emailjs/browser';
 
 const Homepage = () => {
   const [email, setEmail] = useState('');
@@ -15,6 +16,9 @@ const Homepage = () => {
 
     const apiUrl = import.meta.env.VITE_NEWSLETTER_API_URL;
     const recipient = import.meta.env.VITE_SUBSCRIBE_RECIPIENT;
+    const emailjsService = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+    const emailjsTemplate = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+    const emailjsKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
     try {
       if (apiUrl) {
@@ -24,6 +28,16 @@ const Homepage = () => {
           body: JSON.stringify({ email })
         });
         if (!res.ok) throw new Error('subscribe failed');
+        setSubscribeStatus('sent');
+        return;
+      }
+
+      if (emailjsService && emailjsTemplate && emailjsKey) {
+        const templateParams = {
+          to_email: email,
+          message: 'subscribe and we will set up your account for AI Agent Tutor Today'
+        };
+        await emailjsSend(emailjsService, emailjsTemplate, templateParams, emailjsKey);
         setSubscribeStatus('sent');
         return;
       }
@@ -40,8 +54,16 @@ const Homepage = () => {
         return;
       }
 
-      window.location.href = `mailto:${email}?subject=Subscribe&body=subscribe and we will set up your account for AI Agent Tutor Today`;
-      setSubscribeStatus('mailto');
+      alert(`EmailJS not configured. To send emails, please:
+1. Go to https://www.emailjs.com/ and create a free account
+2. Create an email service (e.g., Gmail)
+3. Create an email template with {{to_email}} and {{message}}
+4. Copy your Service ID, Template ID, and Public Key
+5. Add them to .env.local as:
+VITE_EMAILJS_SERVICE_ID="your_service_id"
+VITE_EMAILJS_TEMPLATE_ID="your_template_id"
+VITE_EMAILJS_PUBLIC_KEY="your_public_key"`);
+      setSubscribeStatus('error');
     } catch (err) {
       setSubscribeStatus('error');
     }

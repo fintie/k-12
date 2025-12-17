@@ -1,5 +1,6 @@
 // src/pages/News.jsx
 import React, { useState, useEffect } from 'react';
+import { send as emailjsSend } from '@emailjs/browser';
 
 const News = () => {
   const [activeTab, setActiveTab] = useState('all');
@@ -96,8 +97,12 @@ const News = () => {
 
     const apiUrl = import.meta.env.VITE_NEWSLETTER_API_URL;
     const recipient = import.meta.env.VITE_SUBSCRIBE_RECIPIENT;
+    const emailjsService = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+    const emailjsTemplate = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+    const emailjsKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
     try {
+      // 1) If you have a server endpoint, use it (recommended)
       if (apiUrl) {
         const res = await fetch(apiUrl, {
           method: 'POST',
@@ -109,8 +114,19 @@ const News = () => {
         return;
       }
 
+      // 2) If EmailJS is configured, send confirmation directly to subscriber
+      if (emailjsService && emailjsTemplate && emailjsKey) {
+        const templateParams = {
+          to_email: email,
+          message: 'subscribe and we will set up your account for AI Agent Tutor Today'
+        };
+        await emailjsSend(emailjsService, emailjsTemplate, templateParams, emailjsKey);
+        setSubscribeStatus('sent');
+        return;
+      }
+
+      // 3) If recipient is set, forward submission to that recipient via FormSubmit
       if (recipient) {
-        // Use FormSubmit.co ajax endpoint to forward to the configured recipient
         const res = await fetch(`https://formsubmit.co/ajax/${recipient}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -122,9 +138,17 @@ const News = () => {
         return;
       }
 
-      // Fallback: open mail client with prefilled message (user will send manually)
-      window.location.href = `mailto:${email}?subject=Subscribe&body=subscribe and we will set up your account for AI Agent Tutor Today`;
-      setSubscribeStatus('mailto');
+      // 4) Fallback: show message to configure EmailJS (no popup)
+      alert(`EmailJS not configured. To send emails, please:
+1. Go to https://www.emailjs.com/ and create a free account
+2. Create an email service (e.g., Gmail)
+3. Create an email template with {{to_email}} and {{message}}
+4. Copy your Service ID, Template ID, and Public Key
+5. Add them to .env.local as:
+VITE_EMAILJS_SERVICE_ID="your_service_id"
+VITE_EMAILJS_TEMPLATE_ID="your_template_id"
+VITE_EMAILJS_PUBLIC_KEY="your_public_key"`);
+      setSubscribeStatus('error');
     } catch (err) {
       setSubscribeStatus('error');
     }
