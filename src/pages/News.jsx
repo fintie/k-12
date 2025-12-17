@@ -150,6 +150,7 @@ VITE_EMAILJS_TEMPLATE_ID="your_template_id"
 VITE_EMAILJS_PUBLIC_KEY="your_public_key"`);
       setSubscribeStatus('error');
     } catch (err) {
+      console.error('Subscribe error:', err);
       setSubscribeStatus('error');
     }
   }
@@ -373,7 +374,7 @@ VITE_EMAILJS_PUBLIC_KEY="your_public_key"`);
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-3">
-                {subscribeStatus === 'sent' ? 'Subscription successful — check your inbox.' : subscribeStatus === 'invalid' ? 'Please enter a valid email.' : subscribeStatus === 'error' ? 'Subscription failed. Try again later.' : 'No spam, unsubscribe at any time.'}
+                {subscribeStatus === 'sent' ? 'Subscription successful — check your inbox.' : subscribeStatus === 'invalid' ? 'Please enter a valid email.' : subscribeStatus === 'error' ? 'Subscription failed. Check console for details.' : subscribeStatus === 'mailto' ? 'Please send the email manually.' : 'No spam, unsubscribe at any time.'}
               </p>
             </div>
 
