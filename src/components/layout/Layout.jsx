@@ -2,6 +2,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import ChatbotWidget from '@/components/ChatbotWidget'
 import {
   Menu,
   X,
@@ -55,6 +56,7 @@ const Layout = ({ children, profile }) => {
   }, [user])
 
   const isActive = (href) => location.pathname === href
+  const showChatbot = ['/home', '/news', '/dashboard'].includes(location.pathname)
   const displayName =
     [user?.firstName, user?.lastName].filter(Boolean).join(' ') ||
     user?.displayName ||
@@ -225,12 +227,12 @@ const Layout = ({ children, profile }) => {
           </div>
         </main>
       </div>
+      {showChatbot && <ChatbotWidget />}
     </div>
   )
 }
 
 export default Layout
-
 
 
 

@@ -1,6 +1,5 @@
 // src/pages/Homepage.jsx
 import React, { useState } from 'react';
-import ChatbotWidget from '../components/ChatbotWidget';
 import { send as emailjsSend } from '@emailjs/browser';
 
 const Homepage = () => {
@@ -364,7 +363,6 @@ VITE_EMAILJS_PUBLIC_KEY="your_public_key"`);
         </div>
       </footer>
 
-      <ChatbotWidget />
     </div>
   );
 };

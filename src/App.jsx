@@ -14,8 +14,6 @@ import TutorMeeting from './pages/TutorMeeting'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ProtectedLayout from './components/auth/ProtectedLayout'
-import RequireRole from './components/auth/RequireRole'
-import LoginGuard from './components/auth/LoginGuard'
 import { useAuth } from './context/AuthContext'
 import './App.css'
 
@@ -89,82 +87,15 @@ function App() {
         <Route element={<ProtectedLayout profile={profile} />}>
           <Route path="/home" element={<HomePage />} />
           <Route path="/news" element={<News />} />
-          <Route
-            path="/dashboard"
-            element={
-              <LoginGuard featureName="Dashboard">
-                <Dashboard user={profile} />
-              </LoginGuard>
-            }
-          />
-          <Route
-            path="/practice"
-            element={
-              <LoginGuard featureName="Practice">
-                <Practice />
-              </LoginGuard>
-            }
-          />
-          <Route
-            path="/exam-builder"
-            element={
-              <LoginGuard featureName="Exam Builder">
-                <ExamBuilder />
-              </LoginGuard>
-            }
-          />
-          <Route
-            path="/question-builder"
-            element={
-              <LoginGuard featureName="Question Builder">
-                <QuestionBuilder />
-              </LoginGuard>
-            }
-          />
-          <Route
-            path="/study-groups"
-            element={
-              <LoginGuard featureName="Study Groups">
-                <StudyGroups />
-              </LoginGuard>
-            }
-          />
-          <Route
-            path="/flashcards"
-            element={
-              <LoginGuard featureName="Flashcards">
-                <Flashcards />
-              </LoginGuard>
-            }
-          />
-          <Route
-            path="/student-meetings"
-            element={
-              <LoginGuard featureName="Student Meetings">
-                <RequireRole role="student">
-                  <StudentMeeting />
-                </RequireRole>
-              </LoginGuard>
-            }
-          />
-          <Route
-            path="/tutor-meetings"
-            element={
-              <LoginGuard featureName="Tutor Meetings">
-                <RequireRole role="tutor">
-                  <TutorMeeting />
-                </RequireRole>
-              </LoginGuard>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <LoginGuard featureName="Settings">
-                <Settings user={profile} setUser={setProfile} />
-              </LoginGuard>
-            }
-          />
+          <Route path="/dashboard" element={<Dashboard user={profile} />} />
+          <Route path="/practice" element={<Practice />} />
+          <Route path="/exam-builder" element={<ExamBuilder />} />
+          <Route path="/question-builder" element={<QuestionBuilder />} />
+          <Route path="/study-groups" element={<StudyGroups />} />
+          <Route path="/flashcards" element={<Flashcards />} />
+          <Route path="/student-meetings" element={<StudentMeeting />} />
+          <Route path="/tutor-meetings" element={<TutorMeeting />} />
+          <Route path="/settings" element={<Settings user={profile} setUser={setProfile} />} />
         </Route>
         <Route path="/" element={<RedirectByRole />} />
         <Route path="*" element={<RedirectByRole />} />
