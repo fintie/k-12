@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
-import { loadQuestionsFromStorage } from '@/utils/qb-utils'
+import { loadQuestionsFromStorage, saveQuestionsToStorage } from '@/utils/qb-utils'
+import { practiceStarterQuestions } from '@/data/practiceStarterQuestions'
 import { 
   Play, 
   RotateCcw, 
@@ -99,6 +100,7 @@ const Practice = () => {
   const [history, setHistory] = useState(initial.history)    // answered question records
   const [exhaustedMap, setExhaustedMap] = useState(initial.exhaustedMap)
   const [previewImage, setPreviewImage] = useState(null)     // { src, alt } for modal preview
+  const [bankVersion, setBankVersion] = useState(0)
 
   const subjects = [
     { id: 'algebra', name: 'Algebra', color: 'bg-blue-500' },
@@ -152,7 +154,15 @@ const Practice = () => {
     const wantedSubject = subjectNameMap[selectedSubject] || 'Algebra'
     const base = getBasePool(bank, wantedSubject, diffKey)
     return base.length
-  }, [difficulty, selectedSubject])
+  }, [difficulty, selectedSubject, bankVersion])
+
+  useEffect(() => {
+    const bank = loadQuestionsFromStorage()
+    if (bank.length > 0) return
+    if (saveQuestionsToStorage(practiceStarterQuestions)) {
+      setBankVersion(v => v + 1)
+    }
+  }, [])
 
   const generateQuestion = () => {
     const difficultyLevel = difficulty[0]
@@ -212,6 +222,16 @@ const Practice = () => {
     setEnded(false)
     setTimer(0)
     setLastTickAt(Date.now())
+  }
+
+  const loadStarterQuestions = () => {
+    const success = saveQuestionsToStorage(practiceStarterQuestions)
+    if (!success) {
+      alert('Unable to add starter questions right now. Please try again.')
+      return
+    }
+    setBankVersion(v => v + 1)
+    alert('Starter question bank added. You can now start practicing.')
   }
 
   const checkAnswer = () => {
@@ -481,6 +501,9 @@ const Practice = () => {
               step={5}
               className="mb-2"
             />
+            <p className="text-sm font-medium text-slate-700" aria-live="polite">
+              Selected difficulty: {diffInfo.label} ({difficulty[0]})
+            </p>
             <p className="text-sm text-slate-600">{diffInfo.description}</p>
           </div>
 
@@ -507,9 +530,14 @@ const Practice = () => {
               </Button>
             </div>
             {matchCount === 0 && (
-              <p className="text-xs text-amber-600">
-                No questions available for the current subject and difficulty. Please add some in Question Builder and try again.
-              </p>
+              <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
+                <p className="text-xs text-amber-700">
+                  No questions available for the current subject and difficulty. Add questions in Question Builder, or load a starter bank now.
+                </p>
+                <Button size="sm" variant="outline" className="mt-2" onClick={loadStarterQuestions}>
+                  Load starter questions
+                </Button>
+              </div>
             )}
           </div>
         </CardContent>
@@ -679,10 +707,12 @@ const Practice = () => {
                         ))}
                       </div>
                     )}
-                    <div className="flex items-start space-x-2">
-                      <Lightbulb className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                      <p className="text-sm text-slate-700">{currentQuestion.explanation}</p>
-                    </div>
+                    {currentQuestion.explanation && (
+                      <div className="flex items-start space-x-2">
+                        <Lightbulb className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-sm text-slate-700">{currentQuestion.explanation}</p>
+                      </div>
+                    )}
                   </div>
 
                   <Button onClick={nextQuestion} className="w-full mt-4">
@@ -857,4 +887,3 @@ const Practice = () => {
 }
 
 export default Practice
-
