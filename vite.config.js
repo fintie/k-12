@@ -15,6 +15,10 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
-    allowedHosts: ['5173-ifnm1u47qpdl7xtseohd4-264e4e5d.manus.computer']
+    allowedHosts: [
+      '5173-ifnm1u47qpdl7xtseohd4-264e4e5d.manus.computer',
+      'hypothesis-harrison-downloaded-freeware.trycloudflare.com',
+      'journalism-venice-sampling-symphony.trycloudflare.com'
+    ]
   }
 })
