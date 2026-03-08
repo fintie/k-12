@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+﻿import { useCallback, useEffect, useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Dashboard from './pages/Dashboard'
 import News from './pages/News'
@@ -15,6 +15,12 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ProtectedLayout from './components/auth/ProtectedLayout'
 import { useAuth } from './context/AuthContext'
+import { useTheme } from './context/ThemeContext'
+import {
+  computeDashboardProgressFromPractice,
+  getPracticeStorageKey,
+  readPracticeStateForUser,
+} from './utils/practice-progress'
 import './App.css'
 
 const RedirectByRole = () => {
@@ -37,6 +43,7 @@ const RedirectByRole = () => {
 
 function App() {
   const { user: authUser } = useAuth()
+  const { theme } = useTheme()
   const [profile, setProfile] = useState({
     name: 'Alex Johnson',
     firstName: 'Alex',
@@ -60,6 +67,17 @@ function App() {
     },
   })
 
+  const syncPracticeProgress = useCallback((userId) => {
+    if (!userId) return
+    setProfile((prev) => ({
+      ...prev,
+      progress: computeDashboardProgressFromPractice(
+        readPracticeStateForUser(userId),
+        prev.progress
+      ),
+    }))
+  }, [])
+
   useEffect(() => {
     if (!authUser) return
     const fullName = [authUser.firstName, authUser.lastName].filter(Boolean).join(' ')
@@ -78,6 +96,37 @@ function App() {
       }
     }))
   }, [authUser])
+
+  useEffect(() => {
+    if (!authUser?.id) return
+    syncPracticeProgress(authUser.id)
+  }, [authUser?.id, syncPracticeProgress])
+
+  useEffect(() => {
+    if (!authUser?.id) return
+
+    const activeUserId = String(authUser.id)
+    const expectedStorageKey = getPracticeStorageKey(activeUserId)
+
+    const handlePracticeProgressUpdated = (event) => {
+      const eventUserId = String(event?.detail?.userId || '')
+      if (eventUserId && eventUserId !== activeUserId) return
+      syncPracticeProgress(activeUserId)
+    }
+
+    const handleStorage = (event) => {
+      if (event.key !== expectedStorageKey) return
+      syncPracticeProgress(activeUserId)
+    }
+
+    window.addEventListener('practice-progress-updated', handlePracticeProgressUpdated)
+    window.addEventListener('storage', handleStorage)
+
+    return () => {
+      window.removeEventListener('practice-progress-updated', handlePracticeProgressUpdated)
+      window.removeEventListener('storage', handleStorage)
+    }
+  }, [authUser?.id, syncPracticeProgress])
 
   return (
     <Router basename="/k-12">

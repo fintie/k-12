@@ -10,7 +10,9 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { loadQuestionsFromStorage, saveQuestionsToStorage } from '@/utils/qb-utils'
+import { getPracticeStorageKey, readPracticeStateForUser } from '@/utils/practice-progress'
 import { practiceStarterQuestions } from '@/data/practiceStarterQuestions'
+import { useAuth } from '@/context/AuthContext'
 import { 
   Play, 
   RotateCcw, 
@@ -31,14 +33,14 @@ const describeOption = (opt) => {
 }
 
 const Practice = () => {
-  const LS = { key: 'practice_state_v1' }
+  const { user: authUser } = useAuth()
+  const currentUserId = authUser?.id
 
   // Build initial state from localStorage to avoid losing data on route switches
   const initial = (() => {
     try {
-      const raw = localStorage.getItem(LS.key)
-      if (raw) {
-        const s = JSON.parse(raw)
+      const s = readPracticeStateForUser(currentUserId)
+      if (s) {
         const diff = Array.isArray(s?.difficulty) ? s.difficulty : [60]
         const subj = typeof s?.selectedSubject === 'string' ? s.selectedSubject : 'algebra'
         const wasActive = !!s?.isActive
@@ -339,6 +341,7 @@ const Practice = () => {
   useEffect(() => {
     const persistSnapshot = () => {
       try {
+        const storageKey = getPracticeStorageKey(currentUserId)
         const payload = {
           difficulty,
           selectedSubject,
@@ -356,7 +359,7 @@ const Practice = () => {
           exhaustedMap,
           lastTickAt: Date.now(),
         }
-        localStorage.setItem(LS.key, JSON.stringify(payload))
+        localStorage.setItem(storageKey, JSON.stringify(payload))
       } catch {}
     }
 
@@ -372,7 +375,16 @@ const Practice = () => {
       try { persistSnapshot() } catch {}
       window.removeEventListener('visibilitychange', onVis)
     }
-  }, [difficulty, selectedSubject, currentQuestion, userAnswer, selectedOption, selectedOptions, showResult, isCorrect, sessionStats, timer, isActive, ended, history, exhaustedMap, lastTickAt])
+  }, [currentUserId, difficulty, selectedSubject, currentQuestion, userAnswer, selectedOption, selectedOptions, showResult, isCorrect, sessionStats, timer, isActive, ended, history, exhaustedMap, lastTickAt])
+
+  useEffect(() => {
+    if (!currentUserId) return
+    window.dispatchEvent(
+      new CustomEvent('practice-progress-updated', {
+        detail: { userId: String(currentUserId) },
+      })
+    )
+  }, [currentUserId, history, sessionStats.correct, sessionStats.total, ended])
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60)

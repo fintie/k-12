@@ -13,6 +13,41 @@ import { useMeetingEvents } from '@/hooks/useMeetingEvents'
 import { useAuth } from '@/context/AuthContext'
 
 const createConversationId = (a, b) => [String(a), String(b)].sort().join('__')
+const fallbackTutors = [
+  {
+    id: 'demo-tutor-1',
+    name: 'Maya Chen',
+    subject: 'Algebra, Pre-Algebra',
+    subjects: ['Algebra', 'Pre-Algebra'],
+    availableSlots: ['2026-03-09T16:00', '2026-03-11T18:30', '2026-03-12T15:30'],
+    rating: 4.9,
+    bio: 'Former middle-school math coach who specializes in confidence-building problem solving.',
+    avatar: 'https://i.pravatar.cc/80?img=47',
+    lastMessageAt: null,
+  },
+  {
+    id: 'demo-tutor-2',
+    name: 'Jordan Patel',
+    subject: 'Geometry, Trigonometry',
+    subjects: ['Geometry', 'Trigonometry'],
+    availableSlots: ['2026-03-10T17:00', '2026-03-12T16:00', '2026-03-13T19:00'],
+    rating: 4.8,
+    bio: 'Visual-logic tutor focused on proofs, diagrams, and test-prep pacing strategies.',
+    avatar: 'https://i.pravatar.cc/80?img=12',
+    lastMessageAt: null,
+  },
+  {
+    id: 'demo-tutor-3',
+    name: 'Liam Nguyen',
+    subject: 'Statistics, Calculus',
+    subjects: ['Statistics', 'Calculus'],
+    availableSlots: ['2026-03-09T18:00', '2026-03-10T19:30', '2026-03-14T11:00'],
+    rating: 5.0,
+    bio: 'Data-driven mentor helping students connect formulas to real-world applications.',
+    avatar: 'https://i.pravatar.cc/80?img=22',
+    lastMessageAt: null,
+  },
+]
 
 const StudentMeeting = () => {
   const [contacts, setContacts] = useState([])
@@ -28,6 +63,8 @@ const StudentMeeting = () => {
   const [meetingError, setMeetingError] = useState('')
   const [isStartingMeeting, setIsStartingMeeting] = useState(false)
   const [isEndingMeeting, setIsEndingMeeting] = useState(false)
+  const [scheduledAt, setScheduledAt] = useState('')
+  const [scheduledMeetings, setScheduledMeetings] = useState([])
   const { user: authUser } = useAuth()
 
   const currentUserId = authUser?.id
@@ -369,13 +406,27 @@ const StudentMeeting = () => {
       try {
         const tutors = await fetchUsers({ role: 'tutor' })
 
-        const mapped = tutors.map((tutor) => ({
-          id: tutor.id,
-          name: formatContactName(tutor),
-          subject: formatSubject(tutor),
-          avatar: '/api/placeholder/40/40',
-          lastMessageAt: null
-        }))
+        const mapped = tutors.map((tutor) => {
+          const primarySubject = formatSubject(tutor)
+          const subjects = Array.isArray(tutor.subjects) && tutor.subjects.length > 0
+            ? tutor.subjects
+            : String(primarySubject)
+                .split(',')
+                .map((item) => item.trim())
+                .filter(Boolean)
+
+          return {
+            id: tutor.id,
+            name: formatContactName(tutor),
+            subject: subjects.join(', '),
+            subjects,
+            availableSlots: Array.isArray(tutor.availableSlots) ? tutor.availableSlots : [],
+            rating: Number.isFinite(Number(tutor.rating)) ? Number(tutor.rating) : null,
+            bio: tutor.bio || '',
+            avatar: tutor.avatar || '/api/placeholder/40/40',
+            lastMessageAt: null,
+          }
+        })
 
         const conversations = await fetchConversations(currentUserId)
 
@@ -394,20 +445,21 @@ const StudentMeeting = () => {
           lastMessageAt: lastMessageByContact.get(contact.id) ?? contact.lastMessageAt
         }))
 
-        setContacts(updatedContacts)
+        const safeContacts = updatedContacts.length > 0 ? updatedContacts : fallbackTutors
+        setContacts(safeContacts)
         setSelectedTutorId((prevSelected) => {
-          if (updatedContacts.length === 0) {
+          if (safeContacts.length === 0) {
             return prevSelected === null ? prevSelected : null
           }
-          if (!prevSelected || !updatedContacts.some((contact) => contact.id === prevSelected)) {
-            return updatedContacts[0].id
+          if (!prevSelected || !safeContacts.some((contact) => contact.id === prevSelected)) {
+            return safeContacts[0].id
           }
           return prevSelected
         })
       } catch (error) {
         console.error('Failed to load tutors', error)
-        setContacts([])
-        setSelectedTutorId((prevSelected) => (prevSelected === null ? prevSelected : null))
+        setContacts(fallbackTutors)
+        setSelectedTutorId((prevSelected) => (prevSelected ? prevSelected : fallbackTutors[0].id))
       } finally {
         if (withSpinner) {
           setLoadingContacts(false)
@@ -674,6 +726,15 @@ const StudentMeeting = () => {
     }
   }
 
+  const handleScheduleMeeting = () => {
+    if (!selectedTutor || !scheduledAt) return
+    setScheduledMeetings((prev) => [
+      ...prev,
+      { id: `scheduled-${Date.now()}`, tutorName: selectedTutor.name, at: scheduledAt },
+    ])
+    setScheduledAt('')
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
@@ -757,7 +818,10 @@ const StudentMeeting = () => {
                 {selectedTutor ? selectedTutor.name : 'Select a tutor'}
               </h2>
               {selectedTutor && (
-                <p className="text-xs text-slate-500">Specialty: {selectedTutor.subject}</p>
+                <p className="text-xs text-slate-500">
+                  Specialty: {selectedTutor.subject}
+                  {selectedTutor.rating ? ` | ${selectedTutor.rating.toFixed(1)} / 5.0` : ''}
+                </p>
               )}
             </div>
             <Button
@@ -787,6 +851,53 @@ const StudentMeeting = () => {
               </Button>
             )}
           </div>
+
+          {!isMeetingLive && selectedTutor && (
+            <div className="border-b border-slate-200 bg-slate-50 px-5 py-3">
+              <div className="mb-3 space-y-1 text-xs text-slate-600">
+                {selectedTutor.subjects?.length > 0 && (
+                  <p>Subjects: {selectedTutor.subjects.join(', ')}</p>
+                )}
+                {selectedTutor.rating ? <p>Rating: {selectedTutor.rating.toFixed(1)} / 5.0</p> : null}
+                {selectedTutor.bio ? <p>{selectedTutor.bio}</p> : null}
+              </div>
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="min-w-[220px]">
+                  <p className="mb-1 text-xs text-slate-600">Schedule meeting</p>
+                  <Input
+                    type="datetime-local"
+                    value={scheduledAt}
+                    onChange={(event) => setScheduledAt(event.target.value)}
+                  />
+                </div>
+                <Button size="sm" onClick={handleScheduleMeeting} disabled={!scheduledAt}>
+                  <CalendarClock className="mr-2 h-4 w-4" />
+                  Save schedule
+                </Button>
+              </div>
+              {selectedTutor.availableSlots?.length > 0 && (
+                <div className="mt-3">
+                  <p className="mb-2 text-xs text-slate-600">Available slots</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedTutor.availableSlots.map((slot) => (
+                      <Button key={slot} type="button" size="sm" variant="outline" onClick={() => setScheduledAt(slot)}>
+                        {formatMeetingTime(slot)}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {scheduledMeetings.length > 0 && (
+                <div className="mt-3 space-y-1 text-xs text-slate-600">
+                  {scheduledMeetings.map((item) => (
+                    <p key={item.id}>
+                      {item.tutorName} - {formatMeetingTime(item.at)}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {isMeetingLive ? (
             <div className="border-b border-slate-200 bg-white px-5 py-4">
@@ -916,4 +1027,3 @@ const StudentMeeting = () => {
 }
 
 export default StudentMeeting
-
