@@ -199,7 +199,7 @@ const News = () => {
     setArticles(mockArticles);
   }, []);
 
-  const [visibleCount, setVisibleCount] = useState(3);
+  const [visibleCount, setVisibleCount] = useState(18);
   const [email, setEmail] = useState('');
   const [subscribeStatus, setSubscribeStatus] = useState(null);
 
@@ -210,8 +210,8 @@ const News = () => {
   const visibleArticles = filteredArticles.slice(0, visibleCount);
 
   useEffect(() => {
-    setVisibleCount(3);
-  }, [activeTab]);
+    setVisibleCount(filteredArticles.length);
+  }, [activeTab, filteredArticles.length]);
 
   const loadMore = () => {
     setVisibleCount(prev => Math.min(filteredArticles.length, prev + 3));
