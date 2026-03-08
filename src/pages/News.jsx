@@ -100,99 +100,18 @@ const News = () => {
       url: 'https://medium.com/@cybersquare/5-ai-tools-every-computer-teacher-should-know-in-2026-10e043df99d5',
       image: '/api/placeholder/400/200'
     },
-    // Reddit (2026)
-    {
-      id: 10,
-      title: 'AI Tutors vs Teachers Discussion',
-      source: 'Reddit',
-      date: '2026',
-      category: 'trends',
-      excerpt: 'Discussion on AI tutors replacing teachers and where each is most effective.',
-      url: 'https://www.reddit.com/r/EdTech/comments/1h1u0hx/ai_tutors_vs_teachers/',
-      image: '/api/placeholder/400/200'
-    },
-    {
-      id: 11,
-      title: 'AI Tools Teachers Actually Use in Class',
-      source: 'Reddit',
-      date: '2026',
-      category: 'trends',
-      excerpt: 'Teachers share AI tools they use in real classrooms and what helps most.',
-      url: 'https://www.reddit.com/r/Teachers/comments/1hxg1x5/ai_tools_in_classroom/',
-      image: '/api/placeholder/400/200'
-    },
-    {
-      id: 12,
-      title: 'Personalized Learning with AI Tutors',
-      source: 'Reddit',
-      date: '2026',
-      category: 'trends',
-      excerpt: 'Community thread on AI tutor personalization and learning outcomes.',
-      url: 'https://www.reddit.com/r/MachineLearning/comments/1hz4hjo/ai_tutor_personalized_learning/',
-      image: '/api/placeholder/400/200'
-    },
-    // X (2026)
-    {
-      id: 13,
-      title: 'AI Tutor Architecture Thread',
-      source: 'X',
-      date: '2026-03',
-      category: 'trends',
-      excerpt: 'Thread on agent-based tutoring systems and LLM-driven curriculum generation.',
-      url: 'https://x.com/ylecun/status/1759894858103382272',
-      image: '/api/placeholder/400/200'
-    },
-    {
-      id: 14,
-      title: 'AI Teaching Agents Discussion',
-      source: 'X',
-      date: '2026-03',
-      category: 'trends',
-      excerpt: 'Discussion on AI teaching agents and classroom copilots for teachers.',
-      url: 'https://x.com/karpathy/status/1762820732125038753',
-      image: '/api/placeholder/400/200'
-    },
-    {
-      id: 15,
-      title: 'AI Education Tools Overview',
-      source: 'X',
-      date: '2026-02',
-      category: 'trends',
-      excerpt: 'Overview of AI education tools and their classroom impact.',
-      url: 'https://x.com/AndrewYNg/status/1756123998486929644',
-      image: '/api/placeholder/400/200'
-    },
-    // Quora (2026)
-    {
-      id: 16,
-      title: 'Will AI Replace Human Tutors?',
-      source: 'Quora',
-      date: '2026',
-      category: 'policy',
-      excerpt: 'Q&A on whether AI will replace private tutors and what remains uniquely human.',
-      url: 'https://www.quora.com/Will-AI-replace-human-tutors',
-      image: '/api/placeholder/400/200'
-    },
-    {
-      id: 17,
-      title: 'How Is Machine Learning Used in Education?',
-      source: 'Quora',
-      date: '2026',
-      category: 'policy',
-      excerpt: 'Answers explain where machine learning improves assessment and personalization.',
-      url: 'https://www.quora.com/How-is-machine-learning-used-in-education',
-      image: '/api/placeholder/400/200'
-    },
-    {
-      id: 18,
-      title: 'Are AI Tutors Effective for Learning?',
-      source: 'Quora',
-      date: '2026',
-      category: 'policy',
-      excerpt: 'Discussion on effectiveness of AI tutors and when they work best.',
-      url: 'https://www.quora.com/Are-AI-tutors-effective-for-learning',
-      image: '/api/placeholder/400/200'
-    }
+    // (removed)
+    // removed reddit item
+    // removed reddit item
+    // removed reddit item
+    // (removed X)
+    // removed X item
+    // removed X item
+    // removed X item
+    // (removed Quora)
+    // removed Quora item
+    // removed Quora item
+    // removed Quora item
   ];
 
   useEffect(() => {
