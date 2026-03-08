@@ -6,66 +6,56 @@ const News = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [articles, setArticles] = useState([]);
 
-  // Mock news data - updated to 2025 and with real links/excerpts for demo
+  // Latest updates list across configured social/research platforms
   const mockArticles = [
     {
       id: 1,
-      title: 'AI Tutors Scale Personalized Math Support',
-      source: 'EdTech Today',
-      date: '2025-11-12',
-      category: 'technology',
-      excerpt: 'Schools report improved engagement when AI tutors provide immediate, personalized practice and hints for students.',
-      url: 'https://example.com/ai-tutors-scale-personalized-math',
+      title: 'Conversational AI Tutors for Dialogue-Driven Learning',
+      source: 'arXiv',
+      date: '2026-02',
+      category: 'research',
+      excerpt: 'Examines conversational AI tutoring systems that guide students through dialogue rather than static exercises.',
+      url: 'https://arxiv.org/abs/2602.19303',
       image: '/api/placeholder/400/200'
     },
     {
       id: 2,
-      title: 'National Curriculum Adds Computational Thinking',
-      source: 'Education Ministry',
-      date: '2025-10-30',
-      category: 'policy',
-      excerpt: 'New curriculum guidance encourages computational thinking in K-12 classrooms to build problem-solving skills.',
-      url: 'https://example.com/national-curriculum-computational-thinking',
+      title: 'AI in Your Classroom: A Teacher’s Guide',
+      source: 'Medium',
+      date: '2026-02',
+      category: 'technology',
+      excerpt: 'Explains adaptive AI learning systems and how teachers can integrate them to boost productivity and personalization.',
+      url: 'https://medium.com/@taoist_hawk2000/ai-in-your-classroom-a-teachers-guide-to-navigating-education-s-biggest-shift-in-decades-0d9d91ddbd5e',
       image: '/api/placeholder/400/200'
     },
     {
       id: 3,
-      title: 'Adaptive Platforms Reduce Time to Mastery',
-      source: 'EdResearch Journal',
-      date: '2025-09-21',
+      title: 'AI Tutors vs Teachers: Classroom Perspectives',
+      source: 'Reddit',
+      date: '2026',
       category: 'trends',
-      excerpt: 'A multi-district study found adaptive platforms help students reach mastery faster with targeted practice.',
-      url: 'https://example.com/adaptive-platforms-time-to-mastery',
+      excerpt: 'Community discussion on where AI tutors help most (practice and feedback) and where teachers remain essential.',
+      url: 'https://www.reddit.com/r/EdTech/comments/1h1u0hx/ai_tutors_vs_teachers/',
       image: '/api/placeholder/400/200'
     },
     {
       id: 4,
-      title: 'New Findings in Mathematics Instruction',
-      source: 'Academic Journal',
-      date: '2025-08-05',
-      category: 'research',
-      excerpt: 'Recent research highlights strategies that improve conceptual understanding in middle school math.',
-      url: 'https://example.com/math-instruction-findings-2025',
+      title: 'AI Tutor Architecture Thread',
+      source: 'X',
+      date: '2026-03',
+      category: 'trends',
+      excerpt: 'Thread covering agent-based tutoring systems and curriculum generation workflows for AI education tools.',
+      url: 'https://x.com/ylecun/status/1759894858103382272',
       image: '/api/placeholder/400/200'
     },
     {
       id: 5,
-      title: 'Engagement Boosted by Game-Based Math Labs',
-      source: 'Research Study',
-      date: '2025-06-18',
-      category: 'research',
-      excerpt: 'Pilot programs using short game-based labs report higher student engagement and better retention.',
-      url: 'https://example.com/game-based-math-labs',
-      image: '/api/placeholder/400/200'
-    },
-    {
-      id: 6,
-      title: 'Hybrid Learning Tools Continue to Evolve',
-      source: 'TechMedia',
-      date: '2025-04-02',
-      category: 'technology',
-      excerpt: 'Tooling for hybrid classrooms now focuses on low-latency collaboration and assessment insights.',
-      url: 'https://example.com/hybrid-learning-tools-2025',
+      title: 'Will AI Replace Human Tutors?',
+      source: 'Quora',
+      date: '2026',
+      category: 'policy',
+      excerpt: 'Q&A on the effectiveness of AI tutors and the human factors they still struggle to replace.',
+      url: 'https://www.quora.com/Will-AI-replace-human-tutors',
       image: '/api/placeholder/400/200'
     }
   ];
@@ -83,6 +73,10 @@ const News = () => {
     : articles.filter(article => article.category === activeTab);
 
   const visibleArticles = filteredArticles.slice(0, visibleCount);
+
+  useEffect(() => {
+    setVisibleCount(3);
+  }, [activeTab]);
 
   const loadMore = () => {
     setVisibleCount(prev => Math.min(filteredArticles.length, prev + 3));
