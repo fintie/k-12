@@ -399,7 +399,11 @@ const StudentMeeting = () => {
 
   const loadContacts = useCallback(
     async (withSpinner = false) => {
-      if (!currentUserId) return
+      if (!currentUserId) {
+        setContacts(fallbackTutors)
+        setSelectedTutorId((prevSelected) => (prevSelected ? prevSelected : fallbackTutors[0]?.id))
+        return
+      }
 
       if (withSpinner) setLoadingContacts(true)
 
@@ -470,8 +474,6 @@ const StudentMeeting = () => {
   )
 
   useEffect(() => {
-    if (!currentUserId) return
-
     loadContacts(true)
     const interval = setInterval(() => {
       loadContacts(false)
