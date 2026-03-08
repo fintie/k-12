@@ -8,54 +8,189 @@ const News = () => {
 
   // Latest updates list across configured social/research platforms
   const mockArticles = [
+    // arXiv (Feb–Mar 2026)
     {
       id: 1,
-      title: 'Conversational AI Tutors for Dialogue-Driven Learning',
+      title: 'Conversational AI Tutors',
       source: 'arXiv',
       date: '2026-02',
       category: 'research',
-      excerpt: 'Examines conversational AI tutoring systems that guide students through dialogue rather than static exercises.',
+      excerpt: 'Discusses how conversational AI tutoring systems interact with students through dialogue rather than static exercises.',
       url: 'https://arxiv.org/abs/2602.19303',
       image: '/api/placeholder/400/200'
     },
     {
       id: 2,
-      title: 'AI in Your Classroom: A Teacher’s Guide',
-      source: 'Medium',
-      date: '2026-02',
-      category: 'technology',
-      excerpt: 'Explains adaptive AI learning systems and how teachers can integrate them to boost productivity and personalization.',
-      url: 'https://medium.com/@taoist_hawk2000/ai-in-your-classroom-a-teachers-guide-to-navigating-education-s-biggest-shift-in-decades-0d9d91ddbd5e',
+      title: 'Pedagogical Intelligence of AI Tutors Dataset',
+      source: 'arXiv',
+      date: '2026-03',
+      category: 'research',
+      excerpt: 'Introduces a large dataset (150k tutoring dialogues) to improve AI tutor training.',
+      url: 'https://arxiv.org/abs/2603.02775',
       image: '/api/placeholder/400/200'
     },
     {
       id: 3,
-      title: 'AI Tutors vs Teachers: Classroom Perspectives',
-      source: 'Reddit',
-      date: '2026',
-      category: 'trends',
-      excerpt: 'Community discussion on where AI tutors help most (practice and feedback) and where teachers remain essential.',
-      url: 'https://www.reddit.com/r/EdTech/comments/1h1u0hx/ai_tutors_vs_teachers/',
+      title: 'Human–AI Pedagogical Integration Framework',
+      source: 'arXiv',
+      date: '2026-02',
+      category: 'research',
+      excerpt: 'Shows how AI tutoring systems can improve learner satisfaction and performance.',
+      url: 'https://arxiv.org/abs/2601.17434',
       image: '/api/placeholder/400/200'
     },
     {
       id: 4,
-      title: 'AI Tutor Architecture Thread',
-      source: 'X',
-      date: '2026-03',
-      category: 'trends',
-      excerpt: 'Thread covering agent-based tutoring systems and curriculum generation workflows for AI education tools.',
-      url: 'https://x.com/ylecun/status/1759894858103382272',
+      title: 'FACET Teacher-Facing AI Agent Framework',
+      source: 'arXiv',
+      date: '2026-02',
+      category: 'research',
+      excerpt: 'Presents a multi-agent AI system to support teachers in creating differentiated learning materials.',
+      url: 'https://arxiv.org/abs/2601.22788',
       image: '/api/placeholder/400/200'
     },
     {
       id: 5,
+      title: 'AI Tutor Evaluation Toolkit',
+      source: 'arXiv',
+      date: '2026-02',
+      category: 'research',
+      excerpt: 'Toolkit to evaluate pedagogical quality of AI tutor responses.',
+      url: 'https://arxiv.org/abs/2512.03688',
+      image: '/api/placeholder/400/200'
+    },
+    // Medium (Feb–Mar 2026)
+    {
+      id: 6,
+      title: 'AI in Your Classroom: A Teacher’s Guide',
+      source: 'Medium',
+      date: '2026-02',
+      category: 'technology',
+      excerpt: 'Explains adaptive AI learning systems and teacher productivity improvements.',
+      url: 'https://medium.com/@taoist_hawk2000/ai-in-your-classroom-a-teachers-guide-to-navigating-education-s-biggest-shift-in-decades-0d9d91ddbd5e',
+      image: '/api/placeholder/400/200'
+    },
+    {
+      id: 7,
+      title: 'Future Trends of Intelligent Tutoring Systems',
+      source: 'Medium',
+      date: '2026-03',
+      category: 'technology',
+      excerpt: 'Covers multimodal AI tutoring and explainable AI learning models.',
+      url: 'https://medium.com/@drsoumyabanerjee/every-tomorrow-is-a-better-tomorrow-future-trends-of-intelligent-tutoring-system-ai-in-03a333d24c04',
+      image: '/api/placeholder/400/200'
+    },
+    {
+      id: 8,
+      title: 'AI Tutor + Human Teacher: The Hybrid Classroom Model',
+      source: 'Medium',
+      date: '2026-03',
+      category: 'technology',
+      excerpt: 'Describes hybrid human–AI pedagogy and personalized feedback loops.',
+      url: 'https://medium.com/@thebizaihub/ai-tutor-and-human-teacher-the-hybrid-classroom-model-that-works-b291509ed81a',
+      image: '/api/placeholder/400/200'
+    },
+    {
+      id: 9,
+      title: 'AI Tools Every Computer Teacher Should Know in 2026',
+      source: 'Medium',
+      date: '2026-02',
+      category: 'technology',
+      excerpt: 'Lists AI teaching assistants like Khanmigo and AI lesson planners.',
+      url: 'https://medium.com/@cybersquare/5-ai-tools-every-computer-teacher-should-know-in-2026-10e043df99d5',
+      image: '/api/placeholder/400/200'
+    },
+    // Reddit (2026)
+    {
+      id: 10,
+      title: 'AI Tutors vs Teachers Discussion',
+      source: 'Reddit',
+      date: '2026',
+      category: 'trends',
+      excerpt: 'Discussion on AI tutors replacing teachers and where each is most effective.',
+      url: 'https://www.reddit.com/r/EdTech/comments/1h1u0hx/ai_tutors_vs_teachers/',
+      image: '/api/placeholder/400/200'
+    },
+    {
+      id: 11,
+      title: 'AI Tools Teachers Actually Use in Class',
+      source: 'Reddit',
+      date: '2026',
+      category: 'trends',
+      excerpt: 'Teachers share AI tools they use in real classrooms and what helps most.',
+      url: 'https://www.reddit.com/r/Teachers/comments/1hxg1x5/ai_tools_in_classroom/',
+      image: '/api/placeholder/400/200'
+    },
+    {
+      id: 12,
+      title: 'Personalized Learning with AI Tutors',
+      source: 'Reddit',
+      date: '2026',
+      category: 'trends',
+      excerpt: 'Community thread on AI tutor personalization and learning outcomes.',
+      url: 'https://www.reddit.com/r/MachineLearning/comments/1hz4hjo/ai_tutor_personalized_learning/',
+      image: '/api/placeholder/400/200'
+    },
+    // X (2026)
+    {
+      id: 13,
+      title: 'AI Tutor Architecture Thread',
+      source: 'X',
+      date: '2026-03',
+      category: 'trends',
+      excerpt: 'Thread on agent-based tutoring systems and LLM-driven curriculum generation.',
+      url: 'https://x.com/ylecun/status/1759894858103382272',
+      image: '/api/placeholder/400/200'
+    },
+    {
+      id: 14,
+      title: 'AI Teaching Agents Discussion',
+      source: 'X',
+      date: '2026-03',
+      category: 'trends',
+      excerpt: 'Discussion on AI teaching agents and classroom copilots for teachers.',
+      url: 'https://x.com/karpathy/status/1762820732125038753',
+      image: '/api/placeholder/400/200'
+    },
+    {
+      id: 15,
+      title: 'AI Education Tools Overview',
+      source: 'X',
+      date: '2026-02',
+      category: 'trends',
+      excerpt: 'Overview of AI education tools and their classroom impact.',
+      url: 'https://x.com/AndrewYNg/status/1756123998486929644',
+      image: '/api/placeholder/400/200'
+    },
+    // Quora (2026)
+    {
+      id: 16,
       title: 'Will AI Replace Human Tutors?',
       source: 'Quora',
       date: '2026',
       category: 'policy',
-      excerpt: 'Q&A on the effectiveness of AI tutors and the human factors they still struggle to replace.',
+      excerpt: 'Q&A on whether AI will replace private tutors and what remains uniquely human.',
       url: 'https://www.quora.com/Will-AI-replace-human-tutors',
+      image: '/api/placeholder/400/200'
+    },
+    {
+      id: 17,
+      title: 'How Is Machine Learning Used in Education?',
+      source: 'Quora',
+      date: '2026',
+      category: 'policy',
+      excerpt: 'Answers explain where machine learning improves assessment and personalization.',
+      url: 'https://www.quora.com/How-is-machine-learning-used-in-education',
+      image: '/api/placeholder/400/200'
+    },
+    {
+      id: 18,
+      title: 'Are AI Tutors Effective for Learning?',
+      source: 'Quora',
+      date: '2026',
+      category: 'policy',
+      excerpt: 'Discussion on effectiveness of AI tutors and when they work best.',
+      url: 'https://www.quora.com/Are-AI-tutors-effective-for-learning',
       image: '/api/placeholder/400/200'
     }
   ];
