@@ -10,11 +10,14 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    // Always clear any persisted sessions so a fresh login is required per visit
     try {
-      localStorage.removeItem(STORAGE_KEY)
+      const storedUser = localStorage.getItem(STORAGE_KEY)
+      if (storedUser) {
+        setUser(JSON.parse(storedUser))
+      }
     } catch (storageError) {
-      console.error('Failed to clear stored auth state', storageError)
+      console.error('Failed to load stored auth state', storageError)
+      localStorage.removeItem(STORAGE_KEY)
     } finally {
       setIsLoading(false)
     }
@@ -22,6 +25,15 @@ export const AuthProvider = ({ children }) => {
 
   const persistUser = (nextUser) => {
     setUser(nextUser)
+    try {
+      if (nextUser) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser))
+      } else {
+        localStorage.removeItem(STORAGE_KEY)
+      }
+    } catch (storageError) {
+      console.error('Failed to persist auth state', storageError)
+    }
   }
 
   const handleAuth = async (action) => {
