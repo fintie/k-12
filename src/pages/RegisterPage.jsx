@@ -5,22 +5,62 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
+const YEAR_LEVELS = [
+  'Year 3',
+  'Year 4',
+  'Year 5',
+  'Year 6',
+  'Year 7',
+  'Year 8',
+  'Year 9',
+  'Year 10',
+  'Year 11',
+  'Year 12',
+]
+
+const NSW_MATH_SUBJECTS = [
+  'Selective / OC Mathematics',
+  'NAPLAN Mathematics',
+  'NSW Stage 4 Mathematics',
+  'NSW Stage 5 Mathematics',
+  'HSC Mathematics Standard',
+  'HSC Mathematics Advanced',
+  'HSC Mathematics Extension 1',
+  'HSC Mathematics Extension 2',
+]
+
+const DIFFICULTY_LEVELS = [
+  { value: 'easy', label: 'Foundation' },
+  { value: 'moderate', label: 'Core' },
+  { value: 'advanced', label: 'Extension' },
+]
+
 const RegisterPage = () => {
   const navigate = useNavigate()
   const { user, register, error, clearError } = useAuth()
+
   const [role, setRole] = useState('student')
   const [step, setStep] = useState(1)
+
   const [form, setForm] = useState({
     username: '',
     password: '',
     firstName: '',
     lastName: '',
     email: '',
+
+    // Student fields
     school: '',
-    grade: '',
+    grade: 'Year 12',
     preferredDifficulty: 'moderate',
-    preferredSubject: ''
+    preferredSubject: 'HSC Mathematics Advanced',
+
+    // Tutor-facing fields, mapped to existing backend fields for MVP
+    organisation: '',
+    teachingYearLevels: 'Year 7–12',
+    teachingSubject: 'HSC Mathematics Advanced',
   })
+
   const [submitting, setSubmitting] = useState(false)
   const [localError, setLocalError] = useState('')
 
@@ -56,30 +96,51 @@ const RegisterPage = () => {
       setLocalError('Username and password are required')
       return false
     }
+
     if (!firstName || !lastName || !email) {
       setLocalError('First name, last name, and email are required')
       return false
     }
+
+    return true
+  }
+
+  const validateStudentProfile = () => {
+    const school = form.school.trim()
+    const yearLevel = form.grade.trim()
+    const preferredDifficulty = form.preferredDifficulty.trim()
+    const preferredSubject = form.preferredSubject.trim()
+
+    if (!school || !yearLevel || !preferredDifficulty || !preferredSubject) {
+      setLocalError('Please complete school, year level, difficulty, and subject preferences')
+      return false
+    }
+
+    return true
+  }
+
+  const validateTutorProfile = () => {
+    const organisation = form.organisation.trim()
+    const teachingYearLevels = form.teachingYearLevels.trim()
+    const teachingSubject = form.teachingSubject.trim()
+
+    if (!organisation || !teachingYearLevels || !teachingSubject) {
+      setLocalError('Please complete organisation, teaching year levels, and teaching subject')
+      return false
+    }
+
     return true
   }
 
   const validateStepTwo = () => {
-    const school = form.school.trim()
-    const grade = form.grade.trim()
-    const preferredDifficulty = form.preferredDifficulty.trim()
-    const preferredSubject = form.preferredSubject.trim()
-
-    if (!school || !grade || !preferredDifficulty || !preferredSubject) {
-      setLocalError('Please complete school, grade, difficulty, and subject preferences')
-      return false
-    }
-    return true
+    return role === 'student' ? validateStudentProfile() : validateTutorProfile()
   }
 
   const handleNextStep = (event) => {
     event?.preventDefault()
     setLocalError('')
     clearError()
+
     if (validateStepOne()) {
       setStep(2)
     }
@@ -87,28 +148,45 @@ const RegisterPage = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+
     if (step === 1) {
       handleNextStep()
       return
     }
+
     setSubmitting(true)
     setLocalError('')
     clearError()
+
+    if (!validateStepOne() || !validateStepTwo()) {
+      setSubmitting(false)
+      return
+    }
 
     const username = form.username.trim()
     const password = form.password.trim()
     const firstName = form.firstName.trim()
     const lastName = form.lastName.trim()
     const email = form.email.trim()
-    const school = form.school.trim()
-    const grade = form.grade.trim()
-    const preferredDifficulty = form.preferredDifficulty.trim()
-    const preferredSubject = form.preferredSubject.trim()
 
-    if (!validateStepOne() || !validateStepTwo()) {
-      setSubmitting(false)
-      return
-    }
+    const profilePayload =
+      role === 'student'
+        ? {
+            school: form.school.trim(),
+            grade: form.grade.trim(),
+            preferredDifficulty: form.preferredDifficulty.trim(),
+            preferredSubject: form.preferredSubject.trim(),
+          }
+        : {
+            // MVP mapping:
+            // organisation -> school
+            // teachingYearLevels -> grade/year_level
+            // teachingSubject -> preferred_subject
+            school: form.organisation.trim(),
+            grade: form.teachingYearLevels.trim(),
+            preferredDifficulty: 'moderate',
+            preferredSubject: form.teachingSubject.trim(),
+          }
 
     try {
       await register({
@@ -118,11 +196,9 @@ const RegisterPage = () => {
         firstName,
         lastName,
         email,
-        school,
-        grade,
-        preferredDifficulty,
-        preferredSubject
+        ...profilePayload,
       })
+
       navigate('/login', { replace: true })
     } catch (authError) {
       setLocalError(authError.message)
@@ -132,13 +208,15 @@ const RegisterPage = () => {
   }
 
   const helperText = useMemo(() => {
-    const base =
-      role === 'student'
-        ? 'Create a student account to access the Student Meetings page.'
-        : 'Create a tutor account to access the Tutor Meetings page.'
-    return step === 1
-      ? `${base} Step 1: account basics.`
-      : 'Step 2: finish your learning profile to personalize practice.'
+    if (step === 1) {
+      return role === 'student'
+        ? 'Create a student account to access personalised practice and progress tracking.'
+        : 'Create a tutor account to create questions and support students.'
+    }
+
+    return role === 'student'
+      ? 'Step 2: finish your learning profile to personalise practice.'
+      : 'Step 2: finish your tutor profile.'
   }, [role, step])
 
   const effectiveError = localError || error
@@ -160,6 +238,7 @@ const RegisterPage = () => {
           >
             Student
           </Button>
+
           <Button
             type="button"
             variant={role === 'tutor' ? 'default' : 'outline'}
@@ -173,6 +252,7 @@ const RegisterPage = () => {
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="flex items-center justify-between text-sm text-slate-600">
             <span>Step {step} of 2</span>
+
             {step === 2 && (
               <Button type="button" variant="ghost" size="sm" onClick={() => setStep(1)}>
                 Back
@@ -216,6 +296,7 @@ const RegisterPage = () => {
                     autoComplete="given-name"
                   />
                 </div>
+
                 <div>
                   <Label htmlFor="lastName">Last Name</Label>
                   <Input
@@ -242,7 +323,7 @@ const RegisterPage = () => {
             </div>
           )}
 
-          {step === 2 && (
+          {step === 2 && role === 'student' && (
             <div className="space-y-4">
               <div>
                 <Label htmlFor="school">School</Label>
@@ -250,44 +331,100 @@ const RegisterPage = () => {
                   id="school"
                   value={form.school}
                   onChange={handleChange('school')}
-                  placeholder="Enter your school name"
+                  placeholder="e.g. The King's School"
                   autoComplete="organization"
                 />
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <Label htmlFor="grade">Grade</Label>
-                  <Input
+                  <Label htmlFor="grade">Year Level</Label>
+                  <select
                     id="grade"
                     value={form.grade}
                     onChange={handleChange('grade')}
-                    placeholder="e.g. Grade 8"
-                  />
+                    className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                  >
+                    {YEAR_LEVELS.map((yearLevel) => (
+                      <option key={yearLevel} value={yearLevel}>
+                        {yearLevel}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+
                 <div>
-                  <Label htmlFor="preferredDifficulty">Practice Difficulty</Label>
+                  <Label htmlFor="preferredDifficulty">Preferred Difficulty</Label>
                   <select
                     id="preferredDifficulty"
                     value={form.preferredDifficulty}
                     onChange={handleChange('preferredDifficulty')}
                     className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                   >
-                    <option value="easy">Easy</option>
-                    <option value="moderate">Moderate</option>
-                    <option value="advanced">Advanced</option>
+                    {DIFFICULTY_LEVELS.map((difficulty) => (
+                      <option key={difficulty.value} value={difficulty.value}>
+                        {difficulty.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="preferredSubject">Favorite Subject to Practice</Label>
-                <Input
+                <Label htmlFor="preferredSubject">Preferred Subject</Label>
+                <select
                   id="preferredSubject"
                   value={form.preferredSubject}
                   onChange={handleChange('preferredSubject')}
-                  placeholder="e.g. Algebra, Geometry"
+                  className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                >
+                  {NSW_MATH_SUBJECTS.map((subject) => (
+                    <option key={subject} value={subject}>
+                      {subject}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {step === 2 && role === 'tutor' && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="organisation">Organisation / School / University</Label>
+                <Input
+                  id="organisation"
+                  value={form.organisation}
+                  onChange={handleChange('organisation')}
+                  placeholder="e.g. NextGenius, USYD, private tutor"
+                  autoComplete="organization"
                 />
+              </div>
+
+              <div>
+                <Label htmlFor="teachingYearLevels">Teaching Year Levels</Label>
+                <Input
+                  id="teachingYearLevels"
+                  value={form.teachingYearLevels}
+                  onChange={handleChange('teachingYearLevels')}
+                  placeholder="e.g. Year 7–12, HSC"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="teachingSubject">Teaching Subject</Label>
+                <select
+                  id="teachingSubject"
+                  value={form.teachingSubject}
+                  onChange={handleChange('teachingSubject')}
+                  className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                >
+                  {NSW_MATH_SUBJECTS.map((subject) => (
+                    <option key={subject} value={subject}>
+                      {subject}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           )}
@@ -304,9 +441,16 @@ const RegisterPage = () => {
             </Button>
           ) : (
             <div className="flex gap-2">
-              <Button type="button" variant="outline" className="w-1/3" onClick={() => setStep(1)} disabled={submitting}>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-1/3"
+                onClick={() => setStep(1)}
+                disabled={submitting}
+              >
                 Back
               </Button>
+
               <Button type="submit" className="flex-1" disabled={submitting}>
                 {submitting ? 'Creating account...' : 'Create account'}
               </Button>

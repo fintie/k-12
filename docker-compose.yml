@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: nextgenius-k12-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: nextgenius_k12
+    ports:
+      - "55432:5432"
+    volumes:
+      - nextgenius_k12_pgdata:/var/lib/postgresql/data
+
+volumes:
+  nextgenius_k12_pgdata:

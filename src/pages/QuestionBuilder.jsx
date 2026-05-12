@@ -5,6 +5,113 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { downloadFile, normalize, parseCSV, safeSplit, todayISO, toQuestionFromCSVRow } from '@/utils/qb-utils'
+import {
+  createQuestion,
+  deleteQuestion as deleteQuestionApi,
+  fetchQuestions,
+  updateQuestion,
+} from '@/services/question-service'
+
+function frontendQuestionToApiPayload(q) {
+  const subject = q.metadata?.subject || 'NSW Mathematics'
+  const difficulty = q.metadata?.difficulty || 'easy'
+
+  if (q.type === 'fill') {
+    const numericAnswers = (q.answers || [])
+      .map((answer) => Number(String(answer).trim()))
+      .filter((value) => Number.isFinite(value))
+
+    return {
+      type: 'fill_in_number',
+      curriculum: 'NSW',
+      subject,
+      year_level: q.metadata?.grade || 'Year 7',
+      topic: q.metadata?.tags?.[0] || null,
+      difficulty,
+      prompt_text: q.prompt || null,
+      prompt_latex: null,
+      prompt_image_url: q.promptImage || q.questionImage || null,
+      explanation_text: q.explanation || null,
+      explanation_latex: null,
+      answer_config: {
+        kind: 'number',
+        answers: numericAnswers.length ? numericAnswers : [0],
+        tolerance: 0.001,
+        unit: null,
+      },
+      tags: q.metadata?.tags || [],
+      source: 'question_builder',
+      status: 'draft',
+    }
+  }
+
+  return {
+    type: 'multiple_choice',
+    curriculum: 'NSW',
+    subject,
+    year_level: q.metadata?.grade || 'Year 7',
+    topic: q.metadata?.tags?.[0] || null,
+    difficulty,
+    prompt_text: q.prompt || null,
+    prompt_latex: null,
+    prompt_image_url: q.promptImage || q.questionImage || null,
+    explanation_text: q.explanation || null,
+    explanation_latex: null,
+    options: (q.options || []).map((option, index) => ({
+      label: option.label || String.fromCharCode(65 + index),
+      option_text: option.text || null,
+      option_latex: null,
+      option_image_url: option.image || null,
+      is_correct: Boolean(option.correct),
+      order_index: index,
+    })),
+    tags: q.metadata?.tags || [],
+    source: 'question_builder',
+    status: 'draft',
+  }
+}
+
+function apiQuestionToFrontendQuestion(q) {
+  if (q.type === 'fill_in_number') {
+    return {
+      id: q.id,
+      type: 'fill',
+      prompt: q.prompt_text || q.prompt_latex || '',
+      promptImage: q.prompt_image_url || '',
+      questionImage: '',
+      answers: (q.answer_config?.answers || []).map(String),
+      explanation: q.explanation_text || q.explanation_latex || '',
+      metadata: {
+        grade: q.year_level || '',
+        subject: q.subject || '',
+        difficulty: q.difficulty || 'easy',
+        tags: q.tags || [],
+      },
+    }
+  }
+
+  return {
+    id: q.id,
+    type: 'multiple',
+    prompt: q.prompt_text || q.prompt_latex || '',
+    promptImage: q.prompt_image_url || '',
+    questionImage: '',
+    options: (q.options || []).map((option) => ({
+      id: option.id,
+      text: option.option_text || option.option_latex || '',
+      label: option.label || '',
+      image: option.option_image_url || '',
+      correct: Boolean(option.is_correct),
+    })),
+    explanation: q.explanation_text || q.explanation_latex || '',
+    metadata: {
+      grade: q.year_level || '',
+      subject: q.subject || '',
+      difficulty: q.difficulty || 'easy',
+      tags: q.tags || [],
+    },
+  }
+}
 
 const TYPES = [
   { value: 'single', label: 'Single Choice' },
@@ -19,7 +126,10 @@ const DIFF = [
   { value: 'advanced', label: 'Advanced' },
 ]
 
-const SUBJECTS = ['Algebra', 'Geometry', 'Statistics', 'Calculus', 'Pre-Algebra', 'Trigonometry']
+import { NSW_MATH_SUBJECTS, NSW_YEAR_LEVELS, MATH_TOPICS, DIFFICULTY_LEVELS } from '../data/curriculumOptions'
+const SUBJECTS = NSW_MATH_SUBJECTS
+const YEAR_LEVELS = NSW_YEAR_LEVELS
+const TOPICS = MATH_TOPICS
 
 function sanitizeMediaPath(input) {
   if (input === undefined || input === null) return ''

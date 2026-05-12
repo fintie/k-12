@@ -105,10 +105,10 @@ const Practice = () => {
   const [bankVersion, setBankVersion] = useState(0)
 
   const subjects = [
-    { id: 'algebra', name: 'Algebra', color: 'bg-blue-500' },
-    { id: 'geometry', name: 'Geometry', color: 'bg-green-500' },
-    { id: 'statistics', name: 'Statistics', color: 'bg-purple-500' },
-    { id: 'calculus', name: 'Calculus', color: 'bg-orange-500' },
+    { id: 'hsc-standard', name: 'HSC Mathematics Standard', color: 'bg-blue-500' },
+    { id: 'hsc-advanced', name: 'HSC Mathematics Advanced', color: 'bg-green-500' },
+    { id: 'hsc-ext1', name: 'HSC Mathematics Extension 1', color: 'bg-purple-500' },
+    { id: 'stage5', name: 'NSW Stage 5 Mathematics', color: 'bg-orange-500' },
   ]
 
   const getDifficultyInfo = (level) => {
@@ -132,10 +132,10 @@ const Practice = () => {
   // Initial state is sourced from localStorage through lazy state initializers above
 
   const subjectNameMap = {
-    algebra: 'Algebra',
-    geometry: 'Geometry',
-    statistics: 'Statistics',
-    calculus: 'Calculus',
+    'hsc-standard': 'HSC Mathematics Standard',
+    'hsc-advanced': 'HSC Mathematics Advanced',
+    'hsc-ext1': 'HSC Mathematics Extension 1',
+    stage5: 'NSW Stage 5 Mathematics',
   }
 
   // Helper: map slider value to canonical difficulty key (hoisted function avoids TDZ issues)

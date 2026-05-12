@@ -1,0 +1,19 @@
+[
+  {
+    "type": "multiple_choice",
+    "curriculum": "NSW",
+    "subject": "Stage 5 Mathematics",
+    "year_level": "Year 10",
+    "topic": "Algebra",
+    "difficulty": "moderate",
+    "prompt_latex": "Solve: 3(x - 2) = 2x + 5",
+    "options": [
+      {"label": "A", "option_latex": "x = 9", "is_correct": false},
+      {"label": "B", "option_latex": "x = 10", "is_correct": false},
+      {"label": "C", "option_latex": "x = 11", "is_correct": true},
+      {"label": "D", "option_latex": "x = 12", "is_correct": false}
+    ],
+    "explanation_latex": "3x - 6 = 2x + 5 \\Rightarrow x = 11",
+    "tags": ["algebra", "linear equations"]
+  }
+]

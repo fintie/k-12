@@ -1,64 +1,69 @@
-import { getChatServerBaseUrl } from '@/services/chat-service'
+import { apiRequest, setAuthToken } from './backend-api'
 
-const BASE_URL = getChatServerBaseUrl()
-
-const request = async (path, options) => {
-  const response = await fetch(`${BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(options?.headers ?? {}) },
-    ...options
-  })
-
-  const text = await response.text()
-  let data = {}
-
-  if (text) {
-    try {
-      data = JSON.parse(text)
-    } catch (error) {
-      throw new Error('Unable to parse server response')
-    }
+function mapBackendUser(user) {
+  return {
+    id: user.id,
+    username: user.username,
+    role: user.role,
+    firstName: user.first_name,
+    lastName: user.last_name,
+    email: user.email,
+    school: user.school,
+    grade: user.year_level,
+    preferredSubject: user.preferred_subject,
+    preferredDifficulty: 'moderate',
   }
-
-  if (!response.ok) {
-    const message = data?.error || 'Request failed'
-    throw new Error(message)
-  }
-
-  return data
 }
 
-export const registerUser = async ({
-  username,
-  password,
-  role,
-  firstName,
-  lastName,
-  email,
-  school,
-  grade,
-  preferredDifficulty,
-  preferredSubject
-}) => {
-  return request('/users/register', {
+export async function registerUser(payload) {
+  const data = await apiRequest('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify({
+      username: payload.username,
+      password: payload.password,
+      role: payload.role,
+      first_name: payload.firstName,
+      last_name: payload.lastName,
+      email: payload.email,
+      school: payload.school,
+      year_level: payload.grade,
+      preferred_subject: payload.preferredSubject,
+    }),
+  })
+
+  setAuthToken(data.access_token)
+
+  return {
+    user: mapBackendUser(data.user),
+    accessToken: data.access_token,
+  }
+}
+
+export async function loginUser({ username, password, role }) {
+  const data = await apiRequest('/auth/login', {
     method: 'POST',
     body: JSON.stringify({
       username,
       password,
       role,
-      firstName,
-      lastName,
-      email,
-      school,
-      grade,
-      preferredDifficulty,
-      preferredSubject
-    })
+    }),
   })
+
+  setAuthToken(data.access_token)
+
+  return {
+    user: mapBackendUser(data.user),
+    accessToken: data.access_token,
+  }
 }
 
-export const loginUser = async ({ username, password, role }) => {
-  return request('/users/login', {
-    method: 'POST',
-    body: JSON.stringify({ username, password, role })
-  })
+export async function fetchCurrentUser() {
+  const data = await apiRequest('/auth/me')
+  return {
+    user: mapBackendUser(data.user),
+  }
+}
+
+export function logoutUser() {
+  setAuthToken(null)
 }
