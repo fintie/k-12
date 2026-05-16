@@ -147,7 +147,7 @@ const Layout = ({ children, profile }) => {
                 <p className="text-sm font-medium text-slate-900 truncate">{displayName}</p>
                 <p className="text-xs text-slate-500 truncate capitalize">{secondaryLine}</p>
                 <p className="text-xs text-slate-400 truncate">{roleLabel}</p>
-                {profile?.progress?.overall != null && (
+                {user && profile?.progress?.overall != null && (
                   <div className="mt-2">
                     <div className="flex items-center justify-between text-[11px] text-slate-400">
                       <span>Progress</span>
@@ -168,16 +168,7 @@ const Layout = ({ children, profile }) => {
                 <LogOut className="h-4 w-4" />
               </Button>
             ) : (
-              <Button
-                variant="default"
-                size="sm"
-                className="gap-1 px-2.5 py-1 text-xs"
-                onClick={() => navigate('/login')}
-                title="Login"
-              >
-                <LogIn className="h-3 w-3" />
-                Login
-              </Button>
+              <p className="text-xs text-slate-400">Guest mode</p>
             )}
           </div>
         </div>
@@ -233,7 +224,6 @@ const Layout = ({ children, profile }) => {
 }
 
 export default Layout
-
 
 
 

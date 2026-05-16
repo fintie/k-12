@@ -468,6 +468,7 @@ export default function QuestionBuilder() {
   }, [optionTextEntries.length, optionImageEntries.length])
 
   const [manualOptionImageLabel, setManualOptionImageLabel] = useState('')
+  const [feedback, setFeedback] = useState(null)
 
   const firstMissingImageLabel = useMemo(() => {
     return imageLabels.find((label) => {
@@ -531,6 +532,19 @@ export default function QuestionBuilder() {
   useEffect(() => { try { localStorage.setItem(LS.filterDifficulty, filterDifficulty) } catch {} }, [filterDifficulty])
 
 function addOrUpdate() {
+  if (!form.prompt.trim()) {
+    setFeedback({ type: 'error', text: 'Question prompt is required.' })
+    return
+  }
+  if ((form.type === 'single' || form.type === 'multiple') && !form.options.trim()) {
+    setFeedback({ type: 'error', text: 'Options are required for choice questions.' })
+    return
+  }
+  if ((form.type === 'fill' || form.type === 'short') && !form.answers.trim()) {
+    setFeedback({ type: 'error', text: 'Accepted answers are required for fill/short questions.' })
+    return
+  }
+
   const raw = {
     ...form,
     options: safeSplit(form.options || '', '|'),
@@ -543,8 +557,10 @@ function addOrUpdate() {
   if (editingId) {
     setQuestions(prev => prev.map(it => it.id === editingId ? { ...q, id: editingId } : it))
     setEditingId(null)
+    setFeedback({ type: 'success', text: 'Question updated successfully.' })
     } else {
       setQuestions(prev => [...prev, q])
+      setFeedback({ type: 'success', text: 'Question added successfully.' })
   }
   const cleared = emptyForm(form.type)
   setForm(cleared)
@@ -612,10 +628,17 @@ function addOrUpdate() {
       }
       if (!imported.length) { alert('No questions found.'); ev.target.value = ''; return }
       setQuestions(prev => replaceMode ? imported : [...prev, ...imported])
+      setFeedback({
+        type: 'success',
+        text: replaceMode
+          ? `Imported ${imported.length} questions and replaced existing data.`
+          : `Imported ${imported.length} questions.`
+      })
       ev.target.value = ''
     } catch (err) {
       console.error(err)
       alert('Import failed. Ensure valid JSON/CSV.')
+      setFeedback({ type: 'error', text: 'Import failed. Check your file format and try again.' })
       ev.target.value = ''
     }
   }
@@ -688,6 +711,18 @@ function onDownloadCSVTemplate() {
           Clear saved data
         </Button>
       </div>
+      {feedback && (
+        <div
+          className={`rounded-md border px-4 py-2 text-sm ${
+            feedback.type === 'success'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+              : 'border-red-200 bg-red-50 text-red-700'
+          }`}
+          role={feedback.type === 'success' ? 'status' : 'alert'}
+        >
+          {feedback.text}
+        </div>
+      )}
 
       <div className="border-b border-slate-200">
         <nav className="-mb-px flex space-x-8">
@@ -870,11 +905,15 @@ function onDownloadCSVTemplate() {
               <CardDescription>Import (.json/.csv) data into the builder.</CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="mb-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+                Template columns: `type,prompt,options,answers,explanation,subject,grade,difficulty,tags,correct`
+              </div>
               <div className="flex flex-wrap gap-2 items-center">
                 <label className="inline-flex items-center gap-2 text-sm px-3 py-2 border rounded cursor-pointer">
                   <span>Import (.json/.csv)</span>
                   <input type="file" ref={fileRef} accept=".json,.csv,.tsv,application/json,text/csv" onChange={onImportFile} className="hidden" />
                 </label>
+                <Button variant="outline" onClick={onDownloadCSVTemplate}>Download CSV template</Button>
                 <label className="ml-2 inline-flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={replaceMode} onChange={e => { setReplaceMode(e.target.checked); try { localStorage.setItem('qb_replace_v1', String(e.target.checked)) } catch {} }} />
                   Replace existing on import
@@ -1014,7 +1053,6 @@ function onDownloadCSVTemplate() {
     </div>
   )
 }
-
 
 
 

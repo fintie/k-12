@@ -6,7 +6,39 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { User, Bell, Shield, BookOpen, Save } from 'lucide-react'
+import { User, Bell, Shield, BookOpen, Save, Moon, Sun } from 'lucide-react'
+import { useTheme } from '@/context/ThemeContext'
+
+const ThemeSwitcher = () => {
+  const { theme, toggleTheme } = useTheme()
+
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <Label htmlFor="theme-toggle">Dark Mode</Label>
+        <p className="text-sm text-slate-500">Toggle between light and dark themes</p>
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={toggleTheme}
+        aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+      >
+        {theme === 'light' ? (
+          <>
+            <Moon className="h-4 w-4 mr-2" />
+            Dark
+          </>
+        ) : (
+          <>
+            <Sun className="h-4 w-4 mr-2" />
+            Light
+          </>
+        )}
+      </Button>
+    </div>
+  )
+}
 
 const Settings = ({ user, setUser }) => {
   const [form, setForm] = useState({
@@ -252,6 +284,7 @@ const Settings = ({ user, setUser }) => {
               </div>
               <Switch id="explanations" />
             </div>
+            <ThemeSwitcher />
           </div>
         </CardContent>
       </Card>

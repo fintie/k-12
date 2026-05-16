@@ -64,6 +64,8 @@ const ExamBuilder = () => {
   })
 
   const [bankQuestions, setBankQuestions] = useState([])
+  const [validationMessage, setValidationMessage] = useState('')
+  const [publishStatus, setPublishStatus] = useState('')
 
   useEffect(() => {
     setBankQuestions(loadQuestionsFromStorage())
@@ -153,6 +155,19 @@ const ExamBuilder = () => {
   }
 
   const nextStep = () => {
+    if (currentStep === 1 && !examData.title.trim()) {
+      setValidationMessage('Exam title is required before continuing.')
+      return
+    }
+    if (currentStep === 2 && (!examData.subject || !examData.difficulty)) {
+      setValidationMessage('Please choose both subject and difficulty.')
+      return
+    }
+    if (currentStep === 3 && examData.questionTypes.length === 0) {
+      setValidationMessage('Select at least one question type.')
+      return
+    }
+    setValidationMessage('')
     if (currentStep < 5) setCurrentStep(currentStep + 1)
   }
 
@@ -161,6 +176,10 @@ const ExamBuilder = () => {
   }
 
   const saveExam = () => {
+    if (!examData.title.trim()) {
+      setValidationMessage('Exam title is required to save.')
+      return
+    }
     const newExam = {
       id: savedExams.length + 1,
       title: examData.title,
@@ -175,6 +194,31 @@ const ExamBuilder = () => {
     const cleared = { ...defaultExamData }
     setExamData(cleared)
     setCurrentStep(1)
+    setValidationMessage('')
+    setPublishStatus('Draft saved successfully.')
+    try { localStorage.setItem(LS.data, JSON.stringify(cleared)); localStorage.setItem(LS.step, '1') } catch {}
+  }
+
+  const publishExam = () => {
+    if (!examData.title.trim()) {
+      setValidationMessage('Exam title is required to publish.')
+      return
+    }
+    const newExam = {
+      id: savedExams.length + 1,
+      title: examData.title,
+      subject: examData.subject || 'Unspecified',
+      questions: (examData.selectedQuestionIds?.length || 0) || examData.totalQuestions,
+      timeLimit: examData.timeLimit,
+      created: new Date().toISOString().split('T')[0],
+      status: 'published'
+    }
+    setSavedExams([...savedExams, newExam])
+    const cleared = { ...defaultExamData }
+    setExamData(cleared)
+    setCurrentStep(1)
+    setValidationMessage('')
+    setPublishStatus('Exam published successfully.')
     try { localStorage.setItem(LS.data, JSON.stringify(cleared)); localStorage.setItem(LS.step, '1') } catch {}
   }
 
@@ -192,6 +236,9 @@ const ExamBuilder = () => {
                 placeholder="Enter exam title..."
                 className="mt-1"
               />
+              {!examData.title.trim() && (
+                <p className="mt-1 text-xs text-red-600">Exam title is required.</p>
+              )}
             </div>
             <div>
               <Label htmlFor="description">Description</Label>
@@ -398,7 +445,7 @@ const ExamBuilder = () => {
                 <Save className="mr-2 h-4 w-4" />
                 Save as Draft
               </Button>
-              <Button variant="outline" className="flex-1">
+              <Button variant="outline" className="flex-1" onClick={publishExam}>
                 <Play className="mr-2 h-4 w-4" />
                 Save & Publish
               </Button>
@@ -474,6 +521,16 @@ const ExamBuilder = () => {
               </div>
 
               {renderStepContent()}
+              {validationMessage && (
+                <p className="mt-4 text-sm text-red-600" role="alert">
+                  {validationMessage}
+                </p>
+              )}
+              {publishStatus && (
+                <p className="mt-4 text-sm text-emerald-700" role="status">
+                  {publishStatus}
+                </p>
+              )}
 
               <div className="flex justify-between mt-8">
                 <Button 
@@ -631,4 +688,3 @@ function QuestionBankPicker({ bankQuestions, examData, setExamData }) {
     </div>
   )
 }
-

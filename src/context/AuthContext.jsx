@@ -4,23 +4,23 @@ import { loginUser, registerUser } from '@/services/auth-service'
 const AuthContext = createContext(null)
 const STORAGE_KEY = 'nextgenius-auth-user'
 
+const loadStoredUser = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch (storageError) {
+    console.error('Failed to read stored auth state', storageError)
+    return null
+  }
+}
+
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState(() => loadStoredUser())
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem(STORAGE_KEY)
-      if (storedUser) {
-        setUser(JSON.parse(storedUser))
-      }
-    } catch (storageError) {
-      console.error('Failed to load stored auth state', storageError)
-      localStorage.removeItem(STORAGE_KEY)
-    } finally {
-      setIsLoading(false)
-    }
+    setIsLoading(false)
   }, [])
 
   const persistUser = (nextUser) => {
@@ -40,8 +40,9 @@ export const AuthProvider = ({ children }) => {
     setError(null)
     try {
       const result = await action()
-      persistUser(result.user)
-      return result.user
+      const nextUser = result?.user ?? result
+      persistUser(nextUser)
+      return nextUser
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : 'Authentication failed')
       throw authError

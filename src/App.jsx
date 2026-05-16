@@ -129,7 +129,7 @@ function App() {
   }, [authUser?.id, syncPracticeProgress])
 
   return (
-    <Router basename="/k-12">
+    <Router>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />

@@ -19,6 +19,7 @@ import {
   BookOpen,
   CheckCircle,
   CreditCard,
+  Pencil,
   ListRestart,
   Play,
   Plus,
@@ -203,6 +204,8 @@ const Flashcards = () => {
   const [sessionStats, setSessionStats] = useState({ reviewed: 0, mastered: 0 })
   const [sessionComplete, setSessionComplete] = useState(false)
   const [shuffleMap, setShuffleMap] = useState({})
+  const [selectedDeckId, setSelectedDeckId] = useState('')
+  const [statusMessage, setStatusMessage] = useState('')
 
   useEffect(() => {
     try {
@@ -268,6 +271,7 @@ const Flashcards = () => {
     })
     setSessionStats({ reviewed: 0, mastered: 0 })
     setSessionComplete(complete)
+    setStatusMessage(`Started ${mode} mode for ${deck.name}.`)
     if (complete) showCompletionAlert()
   }
 
@@ -449,6 +453,22 @@ const Flashcards = () => {
     setDecks((prev) => [payload, ...prev])
     setNewDeck({ name: '', subject: SUBJECTS[0], cards: [{ id: uid('card'), front: '', back: '' }] })
     setCreateOpen(false)
+    setStatusMessage(`Deck "${trimmedName}" created with ${validCards.length} card(s).`)
+  }
+
+  const selectedDeck = useMemo(() => decks.find((deck) => deck.id === selectedDeckId) || null, [decks, selectedDeckId])
+
+  const updateSelectedCard = (cardId, field, value) => {
+    if (!selectedDeck) return
+    setDecks((prev) =>
+      prev.map((deck) => {
+        if (deck.id !== selectedDeck.id) return deck
+        return {
+          ...deck,
+          cards: deck.cards.map((card) => (card.id === cardId ? { ...card, [field]: value } : card)),
+        }
+      })
+    )
   }
 
   return (
@@ -556,6 +576,11 @@ const Flashcards = () => {
           </DialogContent>
         </Dialog>
       </div>
+      {statusMessage && (
+        <div className="rounded-md border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm text-indigo-700">
+          {statusMessage}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
@@ -630,6 +655,9 @@ const Flashcards = () => {
                     <Play className="mr-1 h-3 w-3" />
                     Study
                   </Button>
+                  <Button size="sm" variant="outline" onClick={() => setSelectedDeckId(deck.id)}>
+                    <Pencil className="h-3 w-3" />
+                  </Button>
                   <Button size="sm" variant="outline" onClick={() => resetDeckProgress(deck.id)}>
                     <RotateCcw className="h-3 w-3" />
                   </Button>
@@ -646,6 +674,43 @@ const Flashcards = () => {
           )
         })}
       </div>
+
+      {selectedDeck && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Deck Content: {selectedDeck.name}</CardTitle>
+            <CardDescription>Preview and edit cards in this deck.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {selectedDeck.cards.map((card, index) => (
+              <div key={card.id} className="rounded-md border p-3">
+                <p className="mb-2 text-xs text-slate-500">Card {index + 1}</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <div>
+                    <Label>Front</Label>
+                    <textarea
+                      value={card.front}
+                      onChange={(event) => updateSelectedCard(card.id, 'front', event.target.value)}
+                      className="mt-1 flex min-h-[72px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label>Back</Label>
+                    <textarea
+                      value={card.back}
+                      onChange={(event) => updateSelectedCard(card.id, 'back', event.target.value)}
+                      className="mt-1 flex min-h-[72px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={() => setSelectedDeckId('')}>Close preview</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {activeDeck && currentCard && (() => {
         const activeProgress = getDeckProgress(activeDeck)
