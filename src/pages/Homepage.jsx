@@ -147,7 +147,7 @@ const Homepage = () => {
                 href="/new-tutors"
                 className="inline-flex items-center gap-2 rounded-xl bg-blue-500 px-6 py-3 text-base font-semibold text-white transition hover:bg-blue-400"
               >
-                Explore New Tutors
+                Explore Tutor Registration
                 <ArrowRight className="h-4 w-4" />
               </a>
               <a
@@ -244,7 +244,7 @@ const Homepage = () => {
               </p>
             </div>
             <a href="/new-tutors" className="hidden items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 md:inline-flex">
-              View the full New Tutors page
+              View the full Tutor Registration page
               <ArrowRight className="h-4 w-4" />
             </a>
           </div>
@@ -310,7 +310,7 @@ const Homepage = () => {
               href="/new-tutors"
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-3 font-semibold text-slate-900 transition hover:bg-slate-100"
             >
-              Learn more about New Tutors
+              Learn more about Tutor Registration
               <Users className="h-4 w-4" />
             </a>
           </div>

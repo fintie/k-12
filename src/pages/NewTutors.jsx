@@ -29,32 +29,32 @@ import gallerySix from '../assets/new-tutors/classroom-6.jpg'
 import gallerySeven from '../assets/new-tutors/classroom-7.jpg'
 
 const profileHighlights = [
-  'Friendly K-12 maths tutoring community',
-  'Verified, premium-feeling tutor profiles',
-  'Flexible online and Sydney tutoring options',
-  'Better visibility with the right families',
+  'Tutor Registration is now the main goal of this page',
+  'Profile-style form fields based on real tutor listings',
+  'Designed for Sydney and online K-12 tutors',
+  'Collect richer tutor details from the start',
 ]
 
 const supportPillars = [
   {
     icon: BadgeCheck,
     title: 'Profile credibility',
-    body: 'A stronger presentation helps families trust the tutor faster, with clearer signals around quality, communication, and subject fit.',
+    body: 'The page now works as a registration intake, so tutors can provide the same kind of details families expect to see in a quality profile.',
   },
   {
     icon: Users,
-    title: 'Student matching',
-    body: 'We want tutors to feel visible to the right families, not buried in a generic list without context or personality.',
+    title: 'Better matching later',
+    body: 'Collecting richer tutor data early makes it easier to match tutors with the right students and families later.',
   },
   {
     icon: GraduationCap,
-    title: 'Teaching-first brand',
-    body: 'The page should feel human and tutor-centric, with more warmth, proof, and personal teaching style.',
+    title: 'Teaching-first experience',
+    body: 'The layout is designed around the tutor story, strengths, and teaching background rather than just a simple signup box.',
   },
   {
     icon: TrendingUp,
-    title: 'Growth over time',
-    body: 'Start with a strong profile format, then expand into subscriber leads, applications, and qualified student demand.',
+    title: 'Stronger onboarding',
+    body: 'This gives you a better foundation for future tutor onboarding, review, and listing workflows.',
   },
 ]
 
@@ -83,12 +83,12 @@ const services = [
 ]
 
 const tutorBenefits = [
-  'Show a more polished public profile with a warm, parent-friendly tone',
-  'Highlight rate, services, subjects, and teaching strengths clearly',
-  'Present achievements and educational background in a trustworthy way',
-  'Attract families looking for the right fit, not just the cheapest option',
-  'Make it easier for tutors to explain their approach and build confidence with parents',
-  'Support premium tutor positioning instead of a plain directory listing',
+  'Collect the same kind of information a strong tutor listing would show',
+  'Capture more than just email, including rate, subjects, services, and background',
+  'Set up a better tutor review and approval workflow later',
+  'Help tutors present themselves clearly from the beginning',
+  'Make the page feel like a proper tutor registration experience instead of a waitlist',
+  'Create cleaner downstream data for profile publishing and student matching',
 ]
 
 const achievements = [
@@ -107,16 +107,16 @@ const teachingStyle = [
 
 const faqItems = [
   {
-    question: 'Who is this page designed for?',
-    answer: 'Tutors who want a stronger, more professional profile presence and a better way to attract maths students and families.',
+    question: 'Why rename this page to Tutor Registration?',
+    answer: 'Because the real purpose is to collect tutor profile details and registration information, not just interest for future updates.',
   },
   {
-    question: 'Can this support both online and in-person tutors?',
-    answer: 'Yes. The profile style works for online-only tutors, hybrid tutors, or Sydney-based in-person tutoring options.',
+    question: 'What kind of information should be collected?',
+    answer: 'The same kind of details families expect from a professional tutor profile: bio, rate, services, subjects, achievements, education, and availability.',
   },
   {
-    question: 'Why include a subscriber section?',
-    answer: 'It helps build an early list of interested tutors so onboarding, profile creation, and lead matching can start with real demand.',
+    question: 'Can this become a real backend registration flow later?',
+    answer: 'Yes. This page now gives a much better structure for connecting to EmailJS, forms, a database, or a proper tutor onboarding backend later.',
   },
 ]
 
@@ -130,8 +130,17 @@ const gallery = [
 ]
 
 const initialForm = {
-  name: '',
+  fullName: '',
   email: '',
+  location: '',
+  hourlyRate: '',
+  services: '',
+  subjects: '',
+  verifiedMarks: '',
+  about: '',
+  achievements: '',
+  education: '',
+  interests: '',
 }
 
 export default function NewTutors() {
@@ -150,11 +159,11 @@ export default function NewTutors() {
     setFormData((current) => ({ ...current, [field]: event.target.value }))
   }
 
-  const handleSubscribe = async (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
 
-    if (!formData.name.trim()) {
-      setFormStatus({ type: 'error', message: 'Please enter your name.' })
+    if (!formData.fullName.trim()) {
+      setFormStatus({ type: 'error', message: 'Please enter your full name.' })
       return
     }
 
@@ -172,7 +181,7 @@ export default function NewTutors() {
     if (!hasEmailConfig) {
       setFormStatus({
         type: 'success',
-        message: 'The tutor subscriber form is live, but EmailJS is not configured yet. Add the EmailJS env keys to receive tutor subscriber emails.',
+        message: 'The Tutor Registration form is ready, but EmailJS is not configured yet. Add the EmailJS env keys to receive real tutor registrations.',
       })
       return
     }
@@ -182,16 +191,16 @@ export default function NewTutors() {
         import.meta.env.VITE_EMAILJS_SERVICE_ID,
         import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
         {
-          from_name: formData.name.trim(),
+          from_name: formData.fullName.trim(),
           from_email: formData.email.trim(),
-          enquiry_type: 'Tutor subscriber',
-          message: `Tutor subscriber request from ${formData.name.trim()} (${formData.email.trim()})`,
+          enquiry_type: 'Tutor Registration',
+          message: JSON.stringify(formData, null, 2),
         },
         import.meta.env.VITE_EMAILJS_PUBLIC_KEY
       )
 
       setFormData(initialForm)
-      setFormStatus({ type: 'success', message: 'Thanks, you are on the tutor subscriber list.' })
+      setFormStatus({ type: 'success', message: 'Thanks, your tutor registration has been submitted.' })
     } catch (error) {
       setFormStatus({ type: 'error', message: 'Something went wrong while submitting. Please try again.' })
     }
@@ -204,26 +213,26 @@ export default function NewTutors() {
           <div className="flex flex-col justify-center p-8 sm:p-12 lg:p-16">
             <span className="mb-4 inline-flex w-fit items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-blue-100">
               <Star className="h-4 w-4" />
-              Tutor profile inspired layout
+              Tutor Registration
             </span>
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-              A tutor profile page that feels warm, credible, and parent-friendly
+              Register as a tutor with a profile families can trust
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-200">
-              We are moving this page closer to a real tutor listing style, with profile strength, trust signals, subject clarity, and a clearer path for tutors to join.
+              This page is now designed as a real tutor registration experience. It captures the kind of details a strong tutor profile should include, not just a simple email signup.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <a
-                href="#profile-card"
+                href="#registration-form"
                 className="rounded-xl bg-blue-500 px-5 py-3 font-semibold text-white transition hover:bg-blue-400"
               >
-                See profile layout
+                Start registration
               </a>
               <a
-                href="#subscribe"
+                href="#profile-card"
                 className="rounded-xl border border-white/20 px-5 py-3 font-semibold text-white transition hover:bg-white/10"
               >
-                Join tutor list
+                See profile layout
               </a>
             </div>
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
@@ -261,17 +270,17 @@ export default function NewTutors() {
             <div>
               <div className="inline-flex items-center gap-2 rounded-full bg-green-50 px-3 py-1 text-sm font-medium text-green-700">
                 <BadgeCheck className="h-4 w-4" />
-                Very responsive
+                Example tutor profile structure
               </div>
-              <h2 className="mt-4 text-3xl font-bold text-slate-900">NextGenius Maths Tutor</h2>
-              <p className="mt-2 text-slate-600">Private tutor profile preview for Sydney and online families</p>
+              <h2 className="mt-4 text-3xl font-bold text-slate-900">Tutor profile preview</h2>
+              <p className="mt-2 text-slate-600">This shows the kind of information tutors should fill in on the registration form.</p>
               <div className="mt-4 flex flex-wrap gap-4 text-sm text-slate-600">
                 <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4 text-blue-600" /> Sydney, NSW</span>
                 <span className="inline-flex items-center gap-2"><BadgeCheck className="h-4 w-4 text-blue-600" /> Verified profile style</span>
               </div>
             </div>
             <div className="rounded-2xl bg-slate-50 px-5 py-4 text-center">
-              <p className="text-sm text-slate-500">Rate</p>
+              <p className="text-sm text-slate-500">Typical rate field</p>
               <p className="mt-1 inline-flex items-center gap-2 text-2xl font-bold text-slate-900">
                 <BadgeDollarSign className="h-6 w-6 text-blue-600" />
                 $65+
@@ -305,12 +314,9 @@ export default function NewTutors() {
           </div>
 
           <div className="mt-8">
-            <h3 className="text-lg font-semibold text-slate-900">About</h3>
+            <h3 className="text-lg font-semibold text-slate-900">Why use these fields?</h3>
             <p className="mt-4 text-slate-600 leading-7">
-              This profile direction is designed to feel closer to a real tutor listing. It gives tutors space to explain their strengths, share their background, and show families how they teach. The tone should feel warm, trustworthy, and academically strong, especially for maths tutoring across K-12 and HSC pathways.
-            </p>
-            <p className="mt-4 text-slate-600 leading-7">
-              We want tutors to look approachable and capable, not generic. That means clearly presenting subjects, service options, teaching style, educational background, and the kind of student support they provide.
+              The example tutor profile is useful because it shows the exact kind of information a parent expects to see. That makes it a good model for the Tutor Registration form fields inside this page.
             </p>
           </div>
         </div>
@@ -342,7 +348,7 @@ export default function NewTutors() {
           </div>
 
           <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
-            <h3 className="text-xl font-bold text-slate-900">Why this profile format works better</h3>
+            <h3 className="text-xl font-bold text-slate-900">Why this registration approach works better</h3>
             <div className="mt-5 space-y-4">
               {tutorBenefits.map((item) => (
                 <div key={item} className="flex items-start gap-3 rounded-2xl bg-slate-50 p-4">
@@ -390,70 +396,99 @@ export default function NewTutors() {
               </div>
             ))}
           </div>
-          <p className="mt-6 text-slate-600 leading-7">
-            This section can later become dynamic per tutor, with real marks, university background, specialist subjects, and personal achievements shown in a much more compelling way.
-          </p>
         </div>
       </section>
 
-      <section className="rounded-3xl bg-blue-50 p-8 sm:p-10" id="subscribe">
-        <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+      <section className="rounded-3xl bg-blue-50 p-8 sm:p-10" id="registration-form">
+        <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
           <div>
-            <h2 className="text-3xl font-bold text-slate-900">Join the tutor subscriber list</h2>
+            <h2 className="text-3xl font-bold text-slate-900">Tutor Registration Form</h2>
             <p className="mt-4 max-w-2xl text-slate-600 leading-7">
-              If you want to be part of the tutor network, leave your details here. This lets us contact interested tutors when profile onboarding, tutor applications, or student matching opportunities open.
+              This form is based on the kind of fields a full tutor profile would contain. Instead of collecting just an email, it captures the tutor details needed for a proper registration and later profile review.
             </p>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="mt-0.5 h-5 w-5 flex-none text-blue-600" />
-                  <span className="text-sm text-slate-700">Build early interest before full tutor onboarding launches</span>
+                  <span className="text-sm text-slate-700">Collects richer profile content from the first submission</span>
                 </div>
               </div>
               <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="mt-0.5 h-5 w-5 flex-none text-blue-600" />
-                  <span className="text-sm text-slate-700">Collect potential tutor leads in a cleaner, more professional way</span>
+                  <span className="text-sm text-slate-700">Removes the need for a separate subscriber button</span>
                 </div>
               </div>
             </div>
           </div>
+
           <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
             <div className="flex items-center gap-3 text-blue-700">
               <Mail className="h-5 w-5" />
-              <span className="text-sm font-semibold uppercase tracking-[0.2em]">Tutor subscriber</span>
+              <span className="text-sm font-semibold uppercase tracking-[0.2em]">Tutor Registration</span>
             </div>
-            <h3 className="mt-4 text-2xl font-bold text-slate-900">Stay in the loop</h3>
-            <p className="mt-3 text-slate-600 leading-7">
-              Leave your name and email to receive updates about tutor opportunities.
-            </p>
-            <form onSubmit={handleSubscribe} className="mt-6 space-y-4">
+            <h3 className="mt-4 text-2xl font-bold text-slate-900">Register your tutor profile</h3>
+
+            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">Name</span>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={handleChange('name')}
-                  placeholder="Your name"
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                />
+                <span className="mb-2 block text-sm font-medium text-slate-700">Full name</span>
+                <input type="text" value={formData.fullName} onChange={handleChange('fullName')} placeholder="Your full name" className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
               </label>
+
               <label className="block">
                 <span className="mb-2 block text-sm font-medium text-slate-700">Email</span>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange('email')}
-                  placeholder="you@example.com"
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                />
+                <input type="email" value={formData.email} onChange={handleChange('email')} placeholder="you@example.com" className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
               </label>
-              <button
-                type="submit"
-                className="inline-flex w-full items-center justify-center rounded-2xl bg-slate-900 px-5 py-3 font-semibold text-white transition hover:bg-slate-800"
-              >
-                Subscribe as a tutor
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">Location</span>
+                <input type="text" value={formData.location} onChange={handleChange('location')} placeholder="Redfern, Sydney, NSW" className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">Hourly rate</span>
+                <input type="text" value={formData.hourlyRate} onChange={handleChange('hourlyRate')} placeholder="$65 per hour" className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">Services</span>
+                <textarea value={formData.services} onChange={handleChange('services')} rows={3} placeholder="One-to-one tuition, home visits, online help, phone help" className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">Subjects and year levels</span>
+                <textarea value={formData.subjects} onChange={handleChange('subjects')} rows={4} placeholder="Year 7-10 maths, Year 11-12 Mathematics Advanced, Extension Maths, selective school prep" className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">Verified marks or academic results</span>
+                <textarea value={formData.verifiedMarks} onChange={handleChange('verifiedMarks')} rows={3} placeholder="Band 6 Maths Advanced, E4 Extension 1, E4 Extension 2" className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">About</span>
+                <textarea value={formData.about} onChange={handleChange('about')} rows={5} placeholder="Tell families about yourself, your experience, and how you teach." className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">Achievements</span>
+                <textarea value={formData.achievements} onChange={handleChange('achievements')} rows={4} placeholder="Academic prizes, tutoring milestones, competition results, performances, awards" className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">Education</span>
+                <textarea value={formData.education} onChange={handleChange('education')} rows={4} placeholder="School, university, degree, graduation year, relevant study background" className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">Interests</span>
+                <textarea value={formData.interests} onChange={handleChange('interests')} rows={3} placeholder="Reading, sports, music, creative writing, coding" className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
+              </label>
+
+              <button type="submit" className="inline-flex w-full items-center justify-center rounded-2xl bg-slate-900 px-5 py-3 font-semibold text-white transition hover:bg-slate-800">
+                Submit Tutor Registration
               </button>
+
               {formStatus.message ? (
                 <p className={`text-sm ${formStatus.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>
                   {formStatus.message}

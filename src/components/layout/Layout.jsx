@@ -24,7 +24,7 @@ import { useAuth } from '@/context/AuthContext'
 
 const baseNavigation = [
   { name: 'Home', href: '/home', icon: BookOpen },
-  { name: 'New Tutor', href: '/new-tutors', icon: Rocket },
+  { name: 'Tutor Registration', href: '/new-tutors', icon: Rocket },
   { name: 'News', href: '/news', icon: Newspaper },
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
   { name: 'Practice', href: '/practice', icon: BookOpen },
