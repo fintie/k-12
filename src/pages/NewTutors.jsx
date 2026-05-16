@@ -237,7 +237,7 @@ export default function NewTutors() {
             </div>
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
               {profileHighlights.map((item) => (
-                <div key={item} className="rounded-2xl bg-white/10 px-4 py-3 text-sm text-slate-100 ring-1 ring-white/10">
+                <div key={item} className="rounded-2xl bg-white/5 px-4 py-3 text-sm text-slate-100 ring-1 ring-white/10">
                   {item}
                 </div>
               ))}
@@ -250,15 +250,19 @@ export default function NewTutors() {
       </section>
 
       <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-        {supportPillars.map((item) => {
+        {supportPillars.map((item, index) => {
           const Icon = item.icon
+          const pillarImages = [galleryTwo, galleryThree, galleryFour, galleryFive]
           return (
-            <div key={item.title} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                <Icon className="h-6 w-6" />
+            <div key={item.title} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <img src={pillarImages[index]} alt={item.title} className="h-40 w-full object-cover" />
+              <div className="p-6">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                  <Icon className="h-6 w-6" />
+                </div>
+                <h2 className="text-xl font-semibold text-slate-900">{item.title}</h2>
+                <p className="mt-3 text-sm leading-7 text-slate-600">{item.body}</p>
               </div>
-              <h2 className="text-xl font-semibold text-slate-900">{item.title}</h2>
-              <p className="mt-3 text-sm leading-7 text-slate-600">{item.body}</p>
             </div>
           )
         })}
@@ -406,6 +410,9 @@ export default function NewTutors() {
             <p className="mt-4 max-w-2xl text-slate-600 leading-7">
               This form is based on the kind of fields a full tutor profile would contain. Instead of collecting just an email, it captures the tutor details needed for a proper registration and later profile review.
             </p>
+            <div className="mt-6 overflow-hidden rounded-2xl shadow-sm ring-1 ring-slate-200 max-w-xl">
+              <img src={gallerySix} alt="Tutor working with students" className="h-48 w-full object-cover" />
+            </div>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
                 <div className="flex items-start gap-3">
@@ -516,7 +523,7 @@ export default function NewTutors() {
           </div>
         </div>
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          {gallery.map((image) => (
+          {gallery.slice(0, 3).map((image) => (
             <div key={image.src} className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
               <img src={image.src} alt={image.alt} className="h-64 w-full object-cover transition duration-300 hover:scale-105" />
             </div>
