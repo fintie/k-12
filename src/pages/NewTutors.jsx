@@ -1,23 +1,12 @@
 import { useMemo, useState } from 'react'
 import { send as emailjsSend } from '@emailjs/browser'
 import {
-  Users,
-  MapPin,
-  BookOpen,
-  TrendingUp,
   CheckCircle2,
   Star,
-  GraduationCap,
-  BadgeCheck,
   Mail,
   Clock3,
-  BadgeDollarSign,
-  Phone,
-  Home,
-  Video,
   PencilLine,
   Trophy,
-  HeartHandshake,
 } from 'lucide-react'
 
 import heroImage from '../assets/new-tutors/classroom-1.jpg'
@@ -27,36 +16,6 @@ import galleryFour from '../assets/new-tutors/classroom-4.jpg'
 import galleryFive from '../assets/new-tutors/classroom-5.jpg'
 import gallerySix from '../assets/new-tutors/classroom-6.jpg'
 import gallerySeven from '../assets/new-tutors/classroom-7.jpg'
-
-const profileHighlights = [
-  'Tutor Registration is now the main goal of this page',
-  'Profile-style form fields based on real tutor listings',
-  'Designed for Sydney and online K-12 tutors',
-  'Collect richer tutor details from the start',
-]
-
-const supportPillars = [
-  {
-    icon: BadgeCheck,
-    title: 'Profile credibility',
-    body: 'The page now works as a registration intake, so tutors can provide the same kind of details families expect to see in a quality profile.',
-  },
-  {
-    icon: Users,
-    title: 'Better matching later',
-    body: 'Collecting richer tutor data early makes it easier to match tutors with the right students and families later.',
-  },
-  {
-    icon: GraduationCap,
-    title: 'Teaching-first experience',
-    body: 'The layout is designed around the tutor story, strengths, and teaching background rather than just a simple signup box.',
-  },
-  {
-    icon: TrendingUp,
-    title: 'Stronger onboarding',
-    body: 'This gives you a better foundation for future tutor onboarding, review, and listing workflows.',
-  },
-]
 
 const subjectsByLevel = [
   {
@@ -73,24 +32,6 @@ const subjectsByLevel = [
   },
 ]
 
-const services = [
-  'One-to-one tuition',
-  'Online help',
-  'In-person support',
-  'Homework guidance',
-  'Exam preparation',
-  'Parent progress updates',
-]
-
-const tutorBenefits = [
-  'Collect the same kind of information a strong tutor listing would show',
-  'Capture more than just email, including rate, subjects, services, and background',
-  'Set up a better tutor review and approval workflow later',
-  'Help tutors present themselves clearly from the beginning',
-  'Make the page feel like a proper tutor registration experience instead of a waitlist',
-  'Create cleaner downstream data for profile publishing and student matching',
-]
-
 const achievements = [
   'Strong HSC and senior maths subject outcomes',
   'Experience tutoring K-12 students with measurable progress',
@@ -98,25 +39,18 @@ const achievements = [
   'Clear communication with both students and parents',
 ]
 
-const teachingStyle = [
-  'Patient and confidence-building',
-  'Adaptable to different learning styles',
-  'Focused on exam technique and long-term understanding',
-  'Supportive, clear, and structured from lesson to lesson',
-]
-
 const faqItems = [
   {
-    question: 'Why rename this page to Tutor Registration?',
-    answer: 'Because the real purpose is to collect tutor profile details and registration information, not just interest for future updates.',
+    question: 'Who should apply?',
+    answer: 'We welcome tutors who can support K-12 students with clear teaching, reliable communication, and strong subject knowledge.',
   },
   {
-    question: 'What kind of information should be collected?',
-    answer: 'The same kind of details families expect from a professional tutor profile: bio, rate, services, subjects, achievements, education, and availability.',
+    question: 'What information should I prepare?',
+    answer: 'Please prepare your teaching background, subjects, year levels, hourly rate, academic results, and a short introduction about how you teach.',
   },
   {
-    question: 'Can this become a real backend registration flow later?',
-    answer: 'Yes. This page now gives a much better structure for connecting to EmailJS, forms, a database, or a proper tutor onboarding backend later.',
+    question: 'What happens after I submit?',
+    answer: 'We will review your registration details and contact suitable tutors about next steps.',
   },
 ]
 
@@ -218,9 +152,6 @@ export default function NewTutors() {
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
               Register as a tutor with a profile families can trust
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-200">
-              This page is now designed as a real tutor registration experience. It captures the kind of details a strong tutor profile should include, not just a simple email signup.
-            </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <a
                 href="#registration-form"
@@ -228,19 +159,6 @@ export default function NewTutors() {
               >
                 Start registration
               </a>
-              <a
-                href="#profile-card"
-                className="rounded-xl border border-white/20 px-5 py-3 font-semibold text-white transition hover:bg-white/10"
-              >
-                See profile layout
-              </a>
-            </div>
-            <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              {profileHighlights.map((item) => (
-                <div key={item} className="rounded-2xl bg-white/5 px-4 py-3 text-sm text-slate-100 ring-1 ring-white/10">
-                  {item}
-                </div>
-              ))}
             </div>
           </div>
           <div className="min-h-[320px] lg:min-h-full">
@@ -249,112 +167,38 @@ export default function NewTutors() {
         </div>
       </section>
 
-      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-        {supportPillars.map((item, index) => {
-          const Icon = item.icon
-          const pillarImages = [galleryTwo, galleryThree, galleryFour, galleryFive]
-          return (
-            <div key={item.title} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <img src={pillarImages[index]} alt={item.title} className="h-40 w-full object-cover" />
-              <div className="p-6">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                  <Icon className="h-6 w-6" />
+      <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
+          <img src={galleryTwo} alt="Tutor supporting students in class" className="h-72 w-full object-cover" />
+          <div className="p-8">
+            <h2 className="text-3xl font-bold text-slate-900">Why tutors join</h2>
+            <div className="mt-6 space-y-4">
+              {[
+                'Share your teaching experience and subject strengths clearly',
+                'Show the year levels and learning support you offer',
+                'Introduce your tutoring style and approach with confidence',
+                'Apply for online or Sydney-based K-12 tutoring opportunities',
+              ].map((item) => (
+                <div key={item} className="flex items-start gap-3 rounded-2xl bg-slate-50 p-4">
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 flex-none text-blue-600" />
+                  <span className="text-sm text-slate-700">{item}</span>
                 </div>
-                <h2 className="text-xl font-semibold text-slate-900">{item.title}</h2>
-                <p className="mt-3 text-sm leading-7 text-slate-600">{item.body}</p>
-              </div>
+              ))}
             </div>
-          )
-        })}
-      </section>
-
-      <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]" id="profile-card">
-        <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
-          <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-6">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-green-50 px-3 py-1 text-sm font-medium text-green-700">
-                <BadgeCheck className="h-4 w-4" />
-                Example tutor profile structure
-              </div>
-              <h2 className="mt-4 text-3xl font-bold text-slate-900">Tutor profile preview</h2>
-              <p className="mt-2 text-slate-600">This shows the kind of information tutors should fill in on the registration form.</p>
-              <div className="mt-4 flex flex-wrap gap-4 text-sm text-slate-600">
-                <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4 text-blue-600" /> Sydney, NSW</span>
-                <span className="inline-flex items-center gap-2"><BadgeCheck className="h-4 w-4 text-blue-600" /> Verified profile style</span>
-              </div>
-            </div>
-            <div className="rounded-2xl bg-slate-50 px-5 py-4 text-center">
-              <p className="text-sm text-slate-500">Typical rate field</p>
-              <p className="mt-1 inline-flex items-center gap-2 text-2xl font-bold text-slate-900">
-                <BadgeDollarSign className="h-6 w-6 text-blue-600" />
-                $65+
-              </p>
-              <p className="text-sm text-slate-500">per hour</p>
-            </div>
-          </div>
-
-          <div className="mt-6 grid gap-6 lg:grid-cols-2">
-            <div>
-              <h3 className="text-lg font-semibold text-slate-900">Services</h3>
-              <div className="mt-4 flex flex-wrap gap-3">
-                {services.map((item) => (
-                  <span key={item} className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700">
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-slate-900">Tutor style</h3>
-              <div className="mt-4 space-y-3">
-                {teachingStyle.map((item) => (
-                  <div key={item} className="flex items-start gap-3 text-sm text-slate-700">
-                    <HeartHandshake className="mt-0.5 h-4 w-4 flex-none text-blue-600" />
-                    <span>{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8">
-            <h3 className="text-lg font-semibold text-slate-900">Why use these fields?</h3>
-            <p className="mt-4 text-slate-600 leading-7">
-              The example tutor profile is useful because it shows the exact kind of information a parent expects to see. That makes it a good model for the Tutor Registration form fields inside this page.
-            </p>
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="rounded-3xl bg-slate-900 p-8 text-white shadow-lg">
-            <div className="flex items-center gap-3 text-blue-200">
-              <GraduationCap className="h-5 w-5" />
-              <span className="text-sm font-semibold uppercase tracking-[0.2em]">What families notice first</span>
-            </div>
-            <div className="mt-6 space-y-4 text-slate-200">
-              <div className="flex items-start gap-3">
-                <BookOpen className="mt-1 h-5 w-5 flex-none text-blue-300" />
-                <span>Clear subject coverage and year-level support</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <Video className="mt-1 h-5 w-5 flex-none text-blue-300" />
-                <span>Online, in-person, and flexible tutoring formats</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <Phone className="mt-1 h-5 w-5 flex-none text-blue-300" />
-                <span>Responsiveness and easy communication with parents</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <Home className="mt-1 h-5 w-5 flex-none text-blue-300" />
-                <span>A stronger local trust signal for Sydney families</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
-            <h3 className="text-xl font-bold text-slate-900">Why this registration approach works better</h3>
-            <div className="mt-5 space-y-4">
-              {tutorBenefits.map((item) => (
+        <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
+          <img src={galleryThree} alt="Tutor leading a lesson" className="h-72 w-full object-cover" />
+          <div className="p-8">
+            <h2 className="text-3xl font-bold text-slate-900">What to prepare</h2>
+            <div className="mt-6 space-y-4">
+              {[
+                'Your subjects, year levels, and tutoring services',
+                'Your hourly rate and preferred teaching format',
+                'Academic background, results, or achievements',
+                'A short introduction about your teaching style',
+              ].map((item) => (
                 <div key={item} className="flex items-start gap-3 rounded-2xl bg-slate-50 p-4">
                   <CheckCircle2 className="mt-0.5 h-5 w-5 flex-none text-green-600" />
                   <span className="text-sm text-slate-700">{item}</span>
@@ -408,24 +252,10 @@ export default function NewTutors() {
           <div>
             <h2 className="text-3xl font-bold text-slate-900">Tutor Registration Form</h2>
             <p className="mt-4 max-w-2xl text-slate-600 leading-7">
-              This form is based on the kind of fields a full tutor profile would contain. Instead of collecting just an email, it captures the tutor details needed for a proper registration and later profile review.
+              Fill in your tutor details below so we can review your experience, subjects, and teaching background.
             </p>
             <div className="mt-6 overflow-hidden rounded-2xl shadow-sm ring-1 ring-slate-200 max-w-xl">
               <img src={gallerySix} alt="Tutor working with students" className="h-48 w-full object-cover" />
-            </div>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="mt-0.5 h-5 w-5 flex-none text-blue-600" />
-                  <span className="text-sm text-slate-700">Collects richer profile content from the first submission</span>
-                </div>
-              </div>
-              <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="mt-0.5 h-5 w-5 flex-none text-blue-600" />
-                  <span className="text-sm text-slate-700">Removes the need for a separate subscriber button</span>
-                </div>
-              </div>
             </div>
           </div>
 

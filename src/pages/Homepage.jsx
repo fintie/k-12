@@ -383,7 +383,7 @@ const Homepage = () => {
 
       <footer className="bg-gray-900 py-12 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-gray-400">© 2025 MathTutor Pro. All rights reserved.</p>
+          <p className="text-gray-400">© 2026 MathTutor Pro. All rights reserved.</p>
         </div>
       </footer>
     </div>
