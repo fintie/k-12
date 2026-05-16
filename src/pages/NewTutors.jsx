@@ -6,12 +6,18 @@ import {
   BookOpen,
   TrendingUp,
   CheckCircle2,
-  Rocket,
   Star,
   GraduationCap,
   BadgeCheck,
   Mail,
   Clock3,
+  BadgeDollarSign,
+  Phone,
+  Home,
+  Video,
+  PencilLine,
+  Trophy,
+  HeartHandshake,
 } from 'lucide-react'
 
 import heroImage from '../assets/new-tutors/classroom-1.jpg'
@@ -24,64 +30,93 @@ import gallerySeven from '../assets/new-tutors/classroom-7.jpg'
 
 const profileHighlights = [
   'Friendly K-12 maths tutoring community',
-  'Online and Sydney-focused opportunities',
-  'Flexible student matching and scheduling',
-  'Professional brand and parent-facing support',
-]
-
-const tutorBenefits = [
-  'Build a polished tutor profile that parents can trust',
-  'Receive matched inquiries from families seeking maths support',
-  'Focus on teaching while the platform supports visibility and growth',
-  'Highlight your teaching style, strengths, and year-level expertise',
-  'Join a curated tutor network instead of competing in a crowded directory',
-  'Get early access to new student demand as the tutor network expands',
-]
-
-const idealTutorTraits = [
-  'Warm, reliable, and confident communicating with both students and parents',
-  'Strong maths teaching ability across primary, junior high school, or HSC levels',
-  'Able to explain clearly, build confidence, and support long-term progress',
-  'Comfortable teaching online and maintaining structured lesson follow-up',
-  'Interested in being part of a high-quality tutoring brand, not just a one-off listing',
-  'Bonus: selective school prep, extension maths, olympiad, or advanced senior maths experience',
+  'Verified, premium-feeling tutor profiles',
+  'Flexible online and Sydney tutoring options',
+  'Better visibility with the right families',
 ]
 
 const supportPillars = [
   {
     icon: BadgeCheck,
-    title: 'Credible profile positioning',
-    body: 'Present tutors with a more premium, trustworthy profile feel so parents quickly understand experience, teaching style, and subject fit.',
+    title: 'Profile credibility',
+    body: 'A stronger presentation helps families trust the tutor faster, with clearer signals around quality, communication, and subject fit.',
   },
   {
     icon: Users,
-    title: 'Better family fit',
-    body: 'Help the right families find the right tutor based on year level, goals, pace, and communication style.',
+    title: 'Student matching',
+    body: 'We want tutors to feel visible to the right families, not buried in a generic list without context or personality.',
   },
   {
     icon: GraduationCap,
     title: 'Teaching-first brand',
-    body: 'The page is designed to feel supportive and human, with less corporate language and more tutor personality.',
+    body: 'The page should feel human and tutor-centric, with more warmth, proof, and personal teaching style.',
   },
   {
     icon: TrendingUp,
-    title: 'Growth pathway',
-    body: 'Start with strong tutor profiles, subscriber interest, and curated demand before scaling the network further.',
+    title: 'Growth over time',
+    body: 'Start with a strong profile format, then expand into subscriber leads, applications, and qualified student demand.',
   },
+]
+
+const subjectsByLevel = [
+  {
+    level: 'Primary and Year 7 to 10',
+    subjects: ['General maths support', 'Numeracy confidence', 'Homework help', 'School assessments'],
+  },
+  {
+    level: 'Year 11 to 12',
+    subjects: ['Mathematics Standard', 'Mathematics Advanced', 'Extension pathways', 'Exam technique and revision'],
+  },
+  {
+    level: 'Enrichment',
+    subjects: ['Selective school preparation', 'Problem-solving extension', 'Study habits', 'Confidence building'],
+  },
+]
+
+const services = [
+  'One-to-one tuition',
+  'Online help',
+  'In-person support',
+  'Homework guidance',
+  'Exam preparation',
+  'Parent progress updates',
+]
+
+const tutorBenefits = [
+  'Show a more polished public profile with a warm, parent-friendly tone',
+  'Highlight rate, services, subjects, and teaching strengths clearly',
+  'Present achievements and educational background in a trustworthy way',
+  'Attract families looking for the right fit, not just the cheapest option',
+  'Make it easier for tutors to explain their approach and build confidence with parents',
+  'Support premium tutor positioning instead of a plain directory listing',
+]
+
+const achievements = [
+  'Strong HSC and senior maths subject outcomes',
+  'Experience tutoring K-12 students with measurable progress',
+  'Ability to explain difficult concepts in a calm, supportive way',
+  'Clear communication with both students and parents',
+]
+
+const teachingStyle = [
+  'Patient and confidence-building',
+  'Adaptable to different learning styles',
+  'Focused on exam technique and long-term understanding',
+  'Supportive, clear, and structured from lesson to lesson',
 ]
 
 const faqItems = [
   {
-    question: 'Who is this for?',
-    answer: 'Maths tutors who want to work with K-12 students and be part of a stronger, more trustworthy tutoring experience for families.',
+    question: 'Who is this page designed for?',
+    answer: 'Tutors who want a stronger, more professional profile presence and a better way to attract maths students and families.',
   },
   {
-    question: 'Do tutors need to be in Sydney?',
-    answer: 'Sydney familiarity is helpful, especially for NSW curriculum and HSC alignment, but strong online tutors may also be a fit.',
+    question: 'Can this support both online and in-person tutors?',
+    answer: 'Yes. The profile style works for online-only tutors, hybrid tutors, or Sydney-based in-person tutoring options.',
   },
   {
-    question: 'What makes this different from a directory listing?',
-    answer: 'This is positioned more like a curated tutoring community with stronger profile presentation, better trust signals, and a clearer student-matching experience.',
+    question: 'Why include a subscriber section?',
+    answer: 'It helps build an early list of interested tutors so onboarding, profile creation, and lead matching can start with real demand.',
   },
 ]
 
@@ -95,11 +130,12 @@ const gallery = [
 ]
 
 const initialForm = {
+  name: '',
   email: '',
 }
 
 export default function NewTutors() {
-  const [email, setEmail] = useState(initialForm.email)
+  const [formData, setFormData] = useState(initialForm)
   const [formStatus, setFormStatus] = useState({ type: 'idle', message: '' })
 
   const hasEmailConfig = useMemo(() => {
@@ -110,16 +146,25 @@ export default function NewTutors() {
     )
   }, [])
 
+  const handleChange = (field) => (event) => {
+    setFormData((current) => ({ ...current, [field]: event.target.value }))
+  }
+
   const handleSubscribe = async (event) => {
     event.preventDefault()
 
-    if (!email.trim()) {
+    if (!formData.name.trim()) {
+      setFormStatus({ type: 'error', message: 'Please enter your name.' })
+      return
+    }
+
+    if (!formData.email.trim()) {
       setFormStatus({ type: 'error', message: 'Please enter your email.' })
       return
     }
 
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailPattern.test(email.trim())) {
+    if (!emailPattern.test(formData.email.trim())) {
       setFormStatus({ type: 'error', message: 'Please enter a valid email address.' })
       return
     }
@@ -127,7 +172,7 @@ export default function NewTutors() {
     if (!hasEmailConfig) {
       setFormStatus({
         type: 'success',
-        message: 'The subscriber form is ready, but EmailJS is not configured yet. Add the EmailJS env keys to start receiving tutor subscriber emails.',
+        message: 'The tutor subscriber form is live, but EmailJS is not configured yet. Add the EmailJS env keys to receive tutor subscriber emails.',
       })
       return
     }
@@ -137,14 +182,15 @@ export default function NewTutors() {
         import.meta.env.VITE_EMAILJS_SERVICE_ID,
         import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
         {
-          from_email: email.trim(),
+          from_name: formData.name.trim(),
+          from_email: formData.email.trim(),
           enquiry_type: 'Tutor subscriber',
-          message: `Tutor subscriber request from ${email.trim()}`,
+          message: `Tutor subscriber request from ${formData.name.trim()} (${formData.email.trim()})`,
         },
         import.meta.env.VITE_EMAILJS_PUBLIC_KEY
       )
 
-      setEmail(initialForm.email)
+      setFormData(initialForm)
       setFormStatus({ type: 'success', message: 'Thanks, you are on the tutor subscriber list.' })
     } catch (error) {
       setFormStatus({ type: 'error', message: 'Something went wrong while submitting. Please try again.' })
@@ -154,30 +200,30 @@ export default function NewTutors() {
   return (
     <div className="space-y-16">
       <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 text-white shadow-xl">
-        <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="flex flex-col justify-center p-8 sm:p-12 lg:p-16">
             <span className="mb-4 inline-flex w-fit items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-blue-100">
               <Star className="h-4 w-4" />
-              Tutor community, not just another listing
+              Tutor profile inspired layout
             </span>
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-              A friendlier home for maths tutors who want the right students
+              A tutor profile page that feels warm, credible, and parent-friendly
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-200">
-              We are shaping a tutor-first experience that feels more personal, credible, and supportive, so great tutors can stand out to families without sounding generic.
+              We are moving this page closer to a real tutor listing style, with profile strength, trust signals, subject clarity, and a clearer path for tutors to join.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <a
-                href="#subscribe"
+                href="#profile-card"
                 className="rounded-xl bg-blue-500 px-5 py-3 font-semibold text-white transition hover:bg-blue-400"
               >
-                Join tutor updates
+                See profile layout
               </a>
               <a
-                href="#profile"
+                href="#subscribe"
                 className="rounded-xl border border-white/20 px-5 py-3 font-semibold text-white transition hover:bg-white/10"
               >
-                See tutor profile style
+                Join tutor list
               </a>
             </div>
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
@@ -194,7 +240,7 @@ export default function NewTutors() {
         </div>
       </section>
 
-      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4" id="profile">
+      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
         {supportPillars.map((item) => {
           const Icon = item.icon
           return (
@@ -209,87 +255,195 @@ export default function NewTutors() {
         })}
       </section>
 
-      <section className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
+      <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]" id="profile-card">
         <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
-          <div className="flex flex-wrap items-center gap-3 text-sm font-medium text-blue-700">
-            <span className="rounded-full bg-blue-50 px-3 py-1">Tutor profile direction</span>
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600">Parent-friendly tone</span>
-          </div>
-          <h2 className="mt-4 text-3xl font-bold text-slate-900">What a stronger tutor profile should feel like</h2>
-          <p className="mt-4 text-slate-600 leading-7">
-            Instead of a cold listing, this page should make tutors feel approachable, capable, and easy to trust. Families should quickly see teaching warmth, maths expertise, communication style, and the type of student support a tutor provides.
-          </p>
-
-          <div className="mt-8 grid gap-4 sm:grid-cols-2">
-            {tutorBenefits.map((item) => (
-              <div key={item} className="flex items-start gap-3 rounded-2xl bg-slate-50 p-4">
-                <CheckCircle2 className="mt-0.5 h-5 w-5 flex-none text-green-600" />
-                <span className="text-sm text-slate-700">{item}</span>
+          <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-6">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full bg-green-50 px-3 py-1 text-sm font-medium text-green-700">
+                <BadgeCheck className="h-4 w-4" />
+                Very responsive
               </div>
-            ))}
+              <h2 className="mt-4 text-3xl font-bold text-slate-900">NextGenius Maths Tutor</h2>
+              <p className="mt-2 text-slate-600">Private tutor profile preview for Sydney and online families</p>
+              <div className="mt-4 flex flex-wrap gap-4 text-sm text-slate-600">
+                <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4 text-blue-600" /> Sydney, NSW</span>
+                <span className="inline-flex items-center gap-2"><BadgeCheck className="h-4 w-4 text-blue-600" /> Verified profile style</span>
+              </div>
+            </div>
+            <div className="rounded-2xl bg-slate-50 px-5 py-4 text-center">
+              <p className="text-sm text-slate-500">Rate</p>
+              <p className="mt-1 inline-flex items-center gap-2 text-2xl font-bold text-slate-900">
+                <BadgeDollarSign className="h-6 w-6 text-blue-600" />
+                $65+
+              </p>
+              <p className="text-sm text-slate-500">per hour</p>
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">Services</h3>
+              <div className="mt-4 flex flex-wrap gap-3">
+                {services.map((item) => (
+                  <span key={item} className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700">
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">Tutor style</h3>
+              <div className="mt-4 space-y-3">
+                {teachingStyle.map((item) => (
+                  <div key={item} className="flex items-start gap-3 text-sm text-slate-700">
+                    <HeartHandshake className="mt-0.5 h-4 w-4 flex-none text-blue-600" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8">
+            <h3 className="text-lg font-semibold text-slate-900">About</h3>
+            <p className="mt-4 text-slate-600 leading-7">
+              This profile direction is designed to feel closer to a real tutor listing. It gives tutors space to explain their strengths, share their background, and show families how they teach. The tone should feel warm, trustworthy, and academically strong, especially for maths tutoring across K-12 and HSC pathways.
+            </p>
+            <p className="mt-4 text-slate-600 leading-7">
+              We want tutors to look approachable and capable, not generic. That means clearly presenting subjects, service options, teaching style, educational background, and the kind of student support they provide.
+            </p>
           </div>
         </div>
 
-        <div className="rounded-3xl bg-slate-900 p-8 text-white shadow-lg">
-          <div className="flex items-center gap-3 text-blue-200">
-            <GraduationCap className="h-5 w-5" />
-            <span className="text-sm font-semibold uppercase tracking-[0.2em]">Tutor snapshot</span>
+        <div className="space-y-6">
+          <div className="rounded-3xl bg-slate-900 p-8 text-white shadow-lg">
+            <div className="flex items-center gap-3 text-blue-200">
+              <GraduationCap className="h-5 w-5" />
+              <span className="text-sm font-semibold uppercase tracking-[0.2em]">What families notice first</span>
+            </div>
+            <div className="mt-6 space-y-4 text-slate-200">
+              <div className="flex items-start gap-3">
+                <BookOpen className="mt-1 h-5 w-5 flex-none text-blue-300" />
+                <span>Clear subject coverage and year-level support</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <Video className="mt-1 h-5 w-5 flex-none text-blue-300" />
+                <span>Online, in-person, and flexible tutoring formats</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <Phone className="mt-1 h-5 w-5 flex-none text-blue-300" />
+                <span>Responsiveness and easy communication with parents</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <Home className="mt-1 h-5 w-5 flex-none text-blue-300" />
+                <span>A stronger local trust signal for Sydney families</span>
+              </div>
+            </div>
           </div>
-          <h3 className="mt-4 text-2xl font-bold">Friendly, clear, and confidence-building</h3>
-          <p className="mt-4 text-slate-200 leading-7">
-            The best tutor profiles usually balance expertise with warmth. Parents want evidence of strong subject knowledge, but they also want someone their child will actually feel comfortable learning with.
-          </p>
-          <div className="mt-6 space-y-4 text-slate-200">
-            <div className="flex items-start gap-3">
-              <MapPin className="mt-1 h-5 w-5 flex-none text-blue-300" />
-              <span>Sydney and NSW curriculum alignment helps increase trust for local families.</span>
-            </div>
-            <div className="flex items-start gap-3">
-              <Clock3 className="mt-1 h-5 w-5 flex-none text-blue-300" />
-              <span>Flexible online sessions make it easier to support busy school schedules.</span>
-            </div>
-            <div className="flex items-start gap-3">
-              <BookOpen className="mt-1 h-5 w-5 flex-none text-blue-300" />
-              <span>Clear teaching style and subject strengths help families choose the right tutor faster.</span>
+
+          <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
+            <h3 className="text-xl font-bold text-slate-900">Why this profile format works better</h3>
+            <div className="mt-5 space-y-4">
+              {tutorBenefits.map((item) => (
+                <div key={item} className="flex items-start gap-3 rounded-2xl bg-slate-50 p-4">
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 flex-none text-green-600" />
+                  <span className="text-sm text-slate-700">{item}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      <section className="rounded-3xl bg-blue-50 p-8 sm:p-10">
-        <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
+      <section className="grid gap-8 lg:grid-cols-2">
+        <div className="rounded-3xl bg-blue-50 p-8 shadow-sm">
+          <div className="flex items-center gap-3 text-blue-700">
+            <PencilLine className="h-5 w-5" />
+            <h2 className="text-2xl font-bold text-slate-900">Subjects and year levels</h2>
+          </div>
+          <div className="mt-6 space-y-5">
+            {subjectsByLevel.map((group) => (
+              <div key={group.level} className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+                <h3 className="text-lg font-semibold text-slate-900">{group.level}</h3>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {group.subjects.map((subject) => (
+                    <span key={subject} className="rounded-full bg-slate-100 px-3 py-2 text-sm text-slate-700">
+                      {subject}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
+          <div className="flex items-center gap-3 text-blue-700">
+            <Trophy className="h-5 w-5" />
+            <h2 className="text-2xl font-bold text-slate-900">Achievements and teaching strengths</h2>
+          </div>
+          <div className="mt-6 space-y-4">
+            {achievements.map((item) => (
+              <div key={item} className="flex items-start gap-3 rounded-2xl bg-slate-50 p-4">
+                <CheckCircle2 className="mt-0.5 h-5 w-5 flex-none text-blue-600" />
+                <span className="text-sm text-slate-700">{item}</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-6 text-slate-600 leading-7">
+            This section can later become dynamic per tutor, with real marks, university background, specialist subjects, and personal achievements shown in a much more compelling way.
+          </p>
+        </div>
+      </section>
+
+      <section className="rounded-3xl bg-blue-50 p-8 sm:p-10" id="subscribe">
+        <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
           <div>
-            <h2 className="text-3xl font-bold text-slate-900">Who we want in the tutor network</h2>
+            <h2 className="text-3xl font-bold text-slate-900">Join the tutor subscriber list</h2>
             <p className="mt-4 max-w-2xl text-slate-600 leading-7">
-              We are looking for tutors who are strong in maths and genuinely good with people. This should feel welcoming for tutors who care about teaching quality, communication, and student confidence.
+              If you want to be part of the tutor network, leave your details here. This lets us contact interested tutors when profile onboarding, tutor applications, or student matching opportunities open.
             </p>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              {idealTutorTraits.map((item) => (
-                <div key={item} className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-                  <div className="flex items-start gap-3">
-                    <CheckCircle2 className="mt-0.5 h-5 w-5 flex-none text-blue-600" />
-                    <span className="text-sm text-slate-700">{item}</span>
-                  </div>
+              <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 flex-none text-blue-600" />
+                  <span className="text-sm text-slate-700">Build early interest before full tutor onboarding launches</span>
                 </div>
-              ))}
+              </div>
+              <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 flex-none text-blue-600" />
+                  <span className="text-sm text-slate-700">Collect potential tutor leads in a cleaner, more professional way</span>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200" id="subscribe">
+          <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
             <div className="flex items-center gap-3 text-blue-700">
               <Mail className="h-5 w-5" />
               <span className="text-sm font-semibold uppercase tracking-[0.2em]">Tutor subscriber</span>
             </div>
-            <h3 className="mt-4 text-2xl font-bold text-slate-900">Join the tutor subscriber list</h3>
+            <h3 className="mt-4 text-2xl font-bold text-slate-900">Stay in the loop</h3>
             <p className="mt-3 text-slate-600 leading-7">
-              Leave your email to hear when tutor onboarding opens, when new student demand is available, and when profile applications go live.
+              Leave your name and email to receive updates about tutor opportunities.
             </p>
             <form onSubmit={handleSubscribe} className="mt-6 space-y-4">
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">Name</span>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={handleChange('name')}
+                  placeholder="Your name"
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                />
+              </label>
               <label className="block">
                 <span className="mb-2 block text-sm font-medium text-slate-700">Email</span>
                 <input
                   type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                  value={formData.email}
+                  onChange={handleChange('email')}
                   placeholder="you@example.com"
                   className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 />
