@@ -114,8 +114,8 @@ export default function NewTutors() {
 
     if (!hasEmailConfig) {
       setFormStatus({
-        type: 'success',
-        message: 'The Tutor Registration form is ready, but EmailJS is not configured yet. Add the EmailJS env keys to receive real tutor registrations.',
+        type: 'error',
+        message: 'Tutor registration email is not configured yet. Please connect the email service for submissions to be sent to info@nextgenius.com.au.',
       })
       return
     }
@@ -125,9 +125,11 @@ export default function NewTutors() {
         import.meta.env.VITE_EMAILJS_SERVICE_ID,
         import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
         {
+          to_email: 'info@nextgenius.com.au',
           from_name: formData.fullName.trim(),
           from_email: formData.email.trim(),
           enquiry_type: 'Tutor Registration',
+          subject: `Tutor Registration - ${formData.fullName.trim()}`,
           message: JSON.stringify(formData, null, 2),
         },
         import.meta.env.VITE_EMAILJS_PUBLIC_KEY
@@ -345,21 +347,6 @@ export default function NewTutors() {
         ))}
       </section>
 
-      <section>
-        <div className="mb-8 flex items-end justify-between gap-4">
-          <div>
-            <h2 className="text-3xl font-bold text-slate-900">Tutor-friendly visual direction</h2>
-            <p className="mt-2 text-slate-600">Warm, credible, and more personal than a plain tutoring directory card.</p>
-          </div>
-        </div>
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          {gallery.slice(0, 3).map((image) => (
-            <div key={image.src} className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-              <img src={image.src} alt={image.alt} className="h-64 w-full object-cover transition duration-300 hover:scale-105" />
-            </div>
-          ))}
-        </div>
-      </section>
     </div>
   )
 }
