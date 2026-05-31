@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { send as emailjsSend } from '@emailjs/browser'
-import { ArrowRight, Rocket, Users } from 'lucide-react'
+import { ArrowRight, Mail, Rocket, Sparkles, Users } from 'lucide-react'
 
 import heroImage from '../assets/new-tutors/classroom-2.jpg'
 import featureImageOne from '../assets/new-tutors/classroom-1.jpg'
@@ -34,31 +34,6 @@ const coreFeatures = [
     title: 'Smart Platform',
     body: 'Interactive tools and seamless cross-device learning for home study, revision, and regular support.',
     image: galleryFour,
-  },
-]
-
-const pricingPlans = [
-  {
-    name: 'Basic Plan',
-    price: '$10',
-    suffix: '/month',
-    featured: false,
-    items: ['20 sessions/month', 'Students needing foundation building', 'Basic concept explanations', 'Homework review service'],
-  },
-  {
-    name: 'Advanced Plan',
-    price: '$30',
-    suffix: '/month',
-    featured: true,
-    badge: 'Most Popular',
-    items: ['30 sessions/month', 'Students seeking breakthroughs', 'Advanced concept explanations', 'Mock exam services', 'Progress reports'],
-  },
-  {
-    name: 'VIP One-on-One',
-    price: '$50',
-    suffix: '/session',
-    featured: false,
-    items: ['Customized session schedule', 'Personalized deep tutoring', 'Exclusive learning plan', '24/7 Q&A support', 'Regular parent communication'],
   },
 ]
 
@@ -205,16 +180,17 @@ const Homepage = () => {
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <a
-              href="/dashboard"
-              className="inline-block rounded-lg bg-blue-600 px-8 py-3 text-lg font-semibold text-white hover:bg-blue-700"
+              href="/learning-checkup"
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-8 py-3 text-lg font-semibold text-white hover:bg-blue-700"
             >
-              Get Started
+              Free Learning Checkup
+              <Sparkles className="h-5 w-5" />
             </a>
             <a
-              href="#features"
+              href="#learning-checkup"
               className="inline-block rounded-lg border border-white/30 px-8 py-3 text-lg font-semibold text-white hover:bg-white/10"
             >
-              Learn More
+              See How It Works
             </a>
             <a
               href="/new-tutors"
@@ -223,6 +199,49 @@ const Homepage = () => {
               Tutor Registration
               <ArrowRight className="h-5 w-5" />
             </a>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-6 py-16 lg:px-8" id="learning-checkup">
+        <div className="overflow-hidden rounded-3xl bg-gradient-to-r from-blue-50 via-white to-indigo-50 p-8 shadow-sm ring-1 ring-slate-200 lg:p-12">
+          <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-4 py-2 text-sm font-medium text-blue-700">
+                <Sparkles className="h-4 w-4" />
+                New for parents: Free Selective / OC / HSC checkup
+              </div>
+              <h2 className="mt-5 text-3xl font-bold text-slate-900 sm:text-4xl">
+                Get a fast AI learning checkup before committing to tutoring
+              </h2>
+              <p className="mt-4 max-w-2xl text-slate-600">
+                Families can complete a short assessment form and receive an AI-generated learning summary by email, including likely strength areas, weak spots, and recommended next steps.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <a href="/learning-checkup" className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-3 font-semibold text-white hover:bg-slate-800">
+                  Start free checkup
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+                <a href="#subscribe" className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-6 py-3 font-semibold text-slate-700 hover:bg-slate-100">
+                  Join updates
+                  <Mail className="h-4 w-4" />
+                </a>
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+                <p className="text-sm font-semibold text-slate-900">OC</p>
+                <p className="mt-2 text-sm text-slate-600">Quick readiness check for opportunity class candidates.</p>
+              </div>
+              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+                <p className="text-sm font-semibold text-slate-900">Selective</p>
+                <p className="mt-2 text-sm text-slate-600">Identify gaps in thinking skills, maths, English, and exam strategy.</p>
+              </div>
+              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+                <p className="text-sm font-semibold text-slate-900">HSC</p>
+                <p className="mt-2 text-sm text-slate-600">Support senior students with subject-specific and study-habit diagnosis.</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -242,39 +261,6 @@ const Homepage = () => {
               </div>
             </div>
           ))}
-        </div>
-      </section>
-
-      <section id="pricing" className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold text-center text-gray-900 mb-12">Pricing</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {pricingPlans.map((plan) => (
-              <div
-                key={plan.name}
-                className={`rounded-lg bg-white p-8 shadow-lg ${plan.featured ? 'border-2 border-blue-500 md:scale-105' : ''}`}
-              >
-                {plan.badge ? (
-                  <div className="mb-4 inline-block rounded-full bg-blue-500 px-4 py-1 text-sm font-semibold text-white">
-                    {plan.badge}
-                  </div>
-                ) : null}
-                <h3 className="mb-4 text-2xl font-bold text-gray-900">{plan.name}</h3>
-                <p className="mb-6 text-4xl font-bold text-blue-600">
-                  {plan.price}<span className="text-lg text-gray-500">{plan.suffix}</span>
-                </p>
-                <ul className="mb-8 space-y-3 text-gray-600">
-                  {plan.items.map((item) => (
-                    <li key={item}>• {item}</li>
-                  ))}
-                </ul>
-                <button className={`w-full rounded-lg py-3 font-semibold ${plan.featured ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                  Choose Plan
-                </button>
-              </div>
-            ))}
-          </div>
-          <p className="mt-8 text-center text-gray-500"><em>Note: Contact customer service for specific prices, special promotions available now.</em></p>
         </div>
       </section>
 

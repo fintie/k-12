@@ -10,6 +10,7 @@ import Flashcards from './pages/Flashcards'
 import Settings from './pages/Settings'
 import HomePage from './pages/Homepage'
 import NewTutors from './pages/NewTutors'
+import LearningCheckup from './pages/LearningCheckup'
 import StudentMeeting from './pages/StudentMeeting'
 import TutorMeeting from './pages/TutorMeeting'
 import LoginPage from './pages/LoginPage'
@@ -137,6 +138,7 @@ function App() {
         <Route element={<ProtectedLayout profile={profile} />}>
           <Route path="/home" element={<HomePage />} />
           <Route path="/new-tutors" element={<NewTutors />} />
+          <Route path="/learning-checkup" element={<LearningCheckup />} />
           <Route path="/news" element={<News />} />
           <Route path="/dashboard" element={<Dashboard user={profile} />} />
           <Route path="/practice" element={<Practice />} />
