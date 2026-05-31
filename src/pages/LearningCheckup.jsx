@@ -45,6 +45,225 @@ const focusAreas = {
   hsc: ['English', 'Mathematics', 'Sciences', 'Humanities', 'Study discipline', 'Exam technique'],
 }
 
+const assessmentQuestions = {
+  oc: [
+    {
+      id: 'oc-reading-main-idea',
+      skill: 'Reading comprehension',
+      question: 'A passage says a child kept rereading a question before answering. What does this most likely show?',
+      options: ['The child was bored', 'The child was checking meaning carefully', 'The child knew every answer', 'The child wanted to finish quickly'],
+      answer: 'The child was checking meaning carefully',
+    },
+    {
+      id: 'oc-vocab',
+      skill: 'Reading comprehension',
+      question: 'Which word is closest in meaning to "brief"?',
+      options: ['Short', 'Bright', 'Heavy', 'Late'],
+      answer: 'Short',
+    },
+    {
+      id: 'oc-number-pattern',
+      skill: 'Mathematical reasoning',
+      question: 'What is the next number in the pattern: 3, 6, 12, 24, ?',
+      options: ['30', '36', '42', '48'],
+      answer: '48',
+    },
+    {
+      id: 'oc-fractions',
+      skill: 'Mathematical reasoning',
+      question: 'Which fraction is equal to one half?',
+      options: ['2/3', '3/6', '3/4', '4/6'],
+      answer: '3/6',
+    },
+    {
+      id: 'oc-word-problem',
+      skill: 'Problem solving',
+      question: 'Mia has 18 stickers. She gives 5 to a friend and buys 7 more. How many does she have?',
+      options: ['20', '21', '30', '6'],
+      answer: '20',
+    },
+    {
+      id: 'oc-logic',
+      skill: 'Problem solving',
+      question: 'All glims are blue. Some blue things are round. What must be true?',
+      options: ['All glims are round', 'Some glims are round', 'All glims are blue', 'No blue things are glims'],
+      answer: 'All glims are blue',
+    },
+    {
+      id: 'oc-writing',
+      skill: 'Writing confidence',
+      question: 'Which sentence has the clearest detail?',
+      options: ['The dog was nice', 'The dog was very good', 'The golden dog waited quietly beside the gate', 'There was a dog'],
+      answer: 'The golden dog waited quietly beside the gate',
+    },
+    {
+      id: 'oc-punctuation',
+      skill: 'Writing confidence',
+      question: 'Choose the correctly punctuated sentence.',
+      options: ['Because it rained we stayed inside.', 'Because it rained, we stayed inside.', 'Because, it rained we stayed inside.', 'Because it rained we, stayed inside.'],
+      answer: 'Because it rained, we stayed inside.',
+    },
+    {
+      id: 'oc-focus',
+      skill: 'Exam focus',
+      question: 'During a timed test, what should a student do if one question is taking too long?',
+      options: ['Stop the test', 'Guess every remaining answer', 'Mark it and move on, then return later', 'Spend all remaining time on it'],
+      answer: 'Mark it and move on, then return later',
+    },
+    {
+      id: 'oc-checking',
+      skill: 'Exam focus',
+      question: 'What is the best way to check a maths answer?',
+      options: ['Only read the final number', 'Use a different method or estimate', 'Change it at random', 'Skip checking'],
+      answer: 'Use a different method or estimate',
+    },
+  ],
+  selective: [
+    {
+      id: 'sel-inference',
+      skill: 'English reading',
+      question: 'If a character "hesitated before opening the letter", what can we infer?',
+      options: ['They may be nervous', 'They cannot read', 'They are asleep', 'They wrote the letter'],
+      answer: 'They may be nervous',
+    },
+    {
+      id: 'sel-tone',
+      skill: 'English reading',
+      question: 'Which word best describes a sentence that gently makes fun of a mistake?',
+      options: ['Literal', 'Ironic', 'Random', 'Silent'],
+      answer: 'Ironic',
+    },
+    {
+      id: 'sel-percent',
+      skill: 'Mathematics',
+      question: 'A $80 item is discounted by 25%. What is the sale price?',
+      options: ['$20', '$55', '$60', '$75'],
+      answer: '$60',
+    },
+    {
+      id: 'sel-ratio',
+      skill: 'Mathematics',
+      question: 'The ratio of red to blue beads is 2:3. If there are 20 red beads, how many blue beads are there?',
+      options: ['24', '30', '36', '40'],
+      answer: '30',
+    },
+    {
+      id: 'sel-logic-grid',
+      skill: 'Thinking skills',
+      question: 'If A is taller than B, and B is taller than C, which statement must be true?',
+      options: ['C is tallest', 'A is taller than C', 'B is taller than A', 'A and C are equal'],
+      answer: 'A is taller than C',
+    },
+    {
+      id: 'sel-analogy',
+      skill: 'Thinking skills',
+      question: 'Bird is to nest as bee is to:',
+      options: ['Hive', 'Tree', 'Feather', 'Honey'],
+      answer: 'Hive',
+    },
+    {
+      id: 'sel-writing-structure',
+      skill: 'Writing',
+      question: 'What should a strong persuasive introduction usually include?',
+      options: ['Only a joke', 'A clear position and preview of reasons', 'The conclusion', 'A list of random facts'],
+      answer: 'A clear position and preview of reasons',
+    },
+    {
+      id: 'sel-writing-evidence',
+      skill: 'Writing',
+      question: 'Which sentence uses evidence best?',
+      options: ['It is bad because I say so', 'Many students benefit because daily reading improves vocabulary', 'Everyone knows it', 'It is just better'],
+      answer: 'Many students benefit because daily reading improves vocabulary',
+    },
+    {
+      id: 'sel-timing',
+      skill: 'Exam strategy',
+      question: 'What is the best first step before starting a timed section?',
+      options: ['Ignore the instructions', 'Scan the number of questions and time available', 'Start with the last question always', 'Spend five minutes worrying'],
+      answer: 'Scan the number of questions and time available',
+    },
+    {
+      id: 'sel-review',
+      skill: 'Exam strategy',
+      question: 'After a practice test, what gives the most useful improvement information?',
+      options: ['Score only', 'Error types and time spent per section', 'How tired you felt only', 'The colour of the paper'],
+      answer: 'Error types and time spent per section',
+    },
+  ],
+  hsc: [
+    {
+      id: 'hsc-thesis',
+      skill: 'English',
+      question: 'What is the main purpose of a thesis statement in an essay?',
+      options: ['To list every quote', 'To state the argument clearly', 'To repeat the question only', 'To add a bibliography'],
+      answer: 'To state the argument clearly',
+    },
+    {
+      id: 'hsc-evidence',
+      skill: 'English',
+      question: 'Which approach best supports a literature paragraph?',
+      options: ['Technique, evidence, explanation, link', 'Plot summary only', 'Personal opinion only', 'Quotes with no analysis'],
+      answer: 'Technique, evidence, explanation, link',
+    },
+    {
+      id: 'hsc-algebra',
+      skill: 'Mathematics',
+      question: 'Solve: 3x + 5 = 20.',
+      options: ['x = 3', 'x = 5', 'x = 8', 'x = 15'],
+      answer: 'x = 5',
+    },
+    {
+      id: 'hsc-gradient',
+      skill: 'Mathematics',
+      question: 'What is the gradient of the line y = 4x - 7?',
+      options: ['-7', '4', '7', 'x'],
+      answer: '4',
+    },
+    {
+      id: 'hsc-science-validity',
+      skill: 'Sciences',
+      question: 'In an experiment, what improves validity?',
+      options: ['Changing many variables at once', 'Testing what the method claims to test', 'Ignoring controls', 'Using unclear measurements'],
+      answer: 'Testing what the method claims to test',
+    },
+    {
+      id: 'hsc-science-reliability',
+      skill: 'Sciences',
+      question: 'What usually improves reliability of results?',
+      options: ['Repeating trials', 'Using fewer measurements', 'Changing equipment each time', 'Removing all data'],
+      answer: 'Repeating trials',
+    },
+    {
+      id: 'hsc-humanities-source',
+      skill: 'Humanities',
+      question: 'When analysing a historical source, which pair is most important?',
+      options: ['Colour and font', 'Origin and purpose', 'Page number and staple', 'Length and spelling only'],
+      answer: 'Origin and purpose',
+    },
+    {
+      id: 'hsc-humanities-argument',
+      skill: 'Humanities',
+      question: 'A strong humanities response should usually include:',
+      options: ['A claim supported by evidence', 'Only definitions', 'Only dates', 'No judgement'],
+      answer: 'A claim supported by evidence',
+    },
+    {
+      id: 'hsc-study',
+      skill: 'Study discipline',
+      question: 'Which study method is usually most effective for long-term retention?',
+      options: ['Rereading notes once', 'Spaced retrieval practice', 'Highlighting everything', 'Studying only the night before'],
+      answer: 'Spaced retrieval practice',
+    },
+    {
+      id: 'hsc-exam',
+      skill: 'Exam technique',
+      question: 'In an HSC exam, what should you do before writing a long response?',
+      options: ['Start immediately with no plan', 'Plan key points and allocate time', 'Write as slowly as possible', 'Avoid reading the question'],
+      answer: 'Plan key points and allocate time',
+    },
+  ],
+}
+
 const initialForm = (track) => ({
   parentName: '',
   studentName: '',
@@ -58,6 +277,7 @@ const initialForm = (track) => ({
   studyTime: '',
   tutoringHistory: '',
   concern: '',
+  assessmentAnswers: {},
 })
 
 const reportHighlights = [
@@ -71,27 +291,79 @@ function buildSubmissionPayload(track, values) {
     track,
     trackLabel: tracks[track].label,
     ...values,
+    assessmentResult: getAssessmentResult(track, values.assessmentAnswers),
     submittedAt: new Date().toISOString(),
+  }
+}
+
+function getAssessmentResult(track, answers = {}) {
+  const questions = assessmentQuestions[track]
+  const skillTotals = {}
+  const skillCorrect = {}
+  let correct = 0
+
+  questions.forEach((question) => {
+    skillTotals[question.skill] = (skillTotals[question.skill] || 0) + 1
+    if (answers[question.id] === question.answer) {
+      correct += 1
+      skillCorrect[question.skill] = (skillCorrect[question.skill] || 0) + 1
+    }
+  })
+
+  const skillScores = Object.keys(skillTotals).map((skill) => ({
+    skill,
+    correct: skillCorrect[skill] || 0,
+    total: skillTotals[skill],
+  }))
+
+  const weakestSkill = [...skillScores].sort((a, b) => a.correct / a.total - b.correct / b.total)[0]
+  const strongestSkill = [...skillScores].sort((a, b) => b.correct / b.total - a.correct / a.total)[0]
+
+  return {
+    correct,
+    total: questions.length,
+    percentage: Math.round((correct / questions.length) * 100),
+    level:
+      correct >= 8
+        ? 'Strong'
+        : correct >= 6
+          ? 'On track'
+          : correct >= 4
+            ? 'Developing'
+            : 'Needs foundation support',
+    strongestSkill,
+    weakestSkill,
+    skillScores,
   }
 }
 
 function buildLocalReport(payload) {
   const student = payload.studentName || 'the student'
-  const focusArea = payload.weakArea || payload.concern || 'study consistency'
-  const strengthArea = payload.strengthArea || 'general classroom learning'
+  const result = payload.assessmentResult
+  const focusArea = result?.weakestSkill?.skill || payload.weakArea || payload.concern || 'study consistency'
+  const strengthArea = result?.strongestSkill?.skill || payload.strengthArea || 'general classroom learning'
   const targetGoal = payload.targetGoal || 'stronger academic progress'
   const studyTime = payload.studyTime || 'not specified'
+  const scoreLine = result
+    ? `Online assessment score: ${result.correct}/${result.total} (${result.percentage}%) - ${result.level}`
+    : `Current level: ${payload.currentLevel || 'Not specified'}`
+  const skillLines = result?.skillScores?.map(
+    (item) => `- ${item.skill}: ${item.correct}/${item.total}`
+  ) || []
 
   return [
     `${payload.trackLabel} Learning Summary Report for ${student}`,
     '',
-    `Current level: ${payload.currentLevel || 'Not specified'}`,
+    scoreLine,
     `Target goal: ${targetGoal}`,
     '',
     'Summary:',
-    `${student} has a useful foundation for ${payload.trackLabel}. The next improvement should focus on ${focusArea.toLowerCase()} while continuing to build from ${strengthArea.toLowerCase()}.`,
+    `${student} completed a 10-question online checkup for ${payload.trackLabel}. The result suggests a ${result?.level?.toLowerCase() || 'developing'} skills profile, with the next improvement focus on ${focusArea.toLowerCase()}.`,
     '',
-    'Strength:',
+    'Skill breakdown:',
+    ...skillLines,
+    '',
+    'Strongest area:',
     `- ${strengthArea} appears to be the strongest base to build on.`,
     '',
     'Priority risk:',
@@ -139,7 +411,6 @@ export default function LearningCheckup() {
   })
   const [status, setStatus] = useState({ type: 'idle', message: '' })
 
-  const currentTrack = tracks[activeTrack]
   const currentForm = forms[activeTrack]
 
   const submitEndpoint = import.meta.env.VITE_LEARNING_CHECKUP_API_URL
@@ -175,12 +446,35 @@ export default function LearningCheckup() {
     }))
   }
 
+  function updateAssessmentAnswer(track, questionId, value) {
+    setForms((prev) => ({
+      ...prev,
+      [track]: {
+        ...prev[track],
+        assessmentAnswers: {
+          ...(prev[track].assessmentAnswers || {}),
+          [questionId]: value,
+        },
+      },
+    }))
+  }
+
   async function handleSubmit(event) {
     event.preventDefault()
     const payload = buildSubmissionPayload(activeTrack, currentForm)
 
     if (!payload.email || !payload.email.includes('@')) {
       setStatus({ type: 'error', message: 'Please enter a valid email so we can send the AI report.' })
+      return
+    }
+
+    const answeredCount = Object.keys(payload.assessmentAnswers || {}).length
+    const questionCount = assessmentQuestions[activeTrack].length
+    if (answeredCount < questionCount) {
+      setStatus({
+        type: 'error',
+        message: `Please answer all ${questionCount} assessment questions before submitting.`,
+      })
       return
     }
 
@@ -434,6 +728,50 @@ export default function LearningCheckup() {
                           placeholder="What is the main problem right now? Low confidence, weak writing, poor exam technique, inconsistent study habits, etc."
                         />
                       </Field>
+
+                      <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
+                        <div>
+                          <h4 className="text-lg font-semibold text-slate-900">
+                            10-question skills check
+                          </h4>
+                          <p className="mt-1 text-sm text-slate-600">
+                            Answer these quick questions so the report can estimate the student&apos;s current skill level.
+                          </p>
+                        </div>
+                        <div className="space-y-4">
+                          {assessmentQuestions[key].map((question, index) => (
+                            <div key={question.id} className="rounded-xl bg-slate-50 p-4">
+                              <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                                <p className="font-medium text-slate-900">
+                                  {index + 1}. {question.question}
+                                </p>
+                                <span className="shrink-0 rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-700">
+                                  {question.skill}
+                                </span>
+                              </div>
+                              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                                {question.options.map((option) => {
+                                  const selected = forms[key].assessmentAnswers?.[question.id] === option
+                                  return (
+                                    <button
+                                      key={option}
+                                      type="button"
+                                      onClick={() => updateAssessmentAnswer(key, question.id, option)}
+                                      className={`rounded-lg border px-3 py-2 text-left text-sm transition ${
+                                        selected
+                                          ? 'border-indigo-500 bg-indigo-50 text-indigo-900'
+                                          : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-200 hover:bg-indigo-50/60'
+                                      }`}
+                                    >
+                                      {option}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
 
                       <div className="rounded-2xl border border-dashed border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900">
                         After submission, the flow is: do the online test → receive the learning summary report by email.

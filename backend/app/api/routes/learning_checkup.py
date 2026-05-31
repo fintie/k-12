@@ -5,7 +5,7 @@ import json
 import os
 import smtplib
 from email.message import EmailMessage
-from typing import Literal
+from typing import Any, Literal
 from urllib.request import Request, urlopen
 
 from fastapi import APIRouter, HTTPException
@@ -31,6 +31,8 @@ class LearningCheckupRequest(BaseModel):
     studyTime: str = ""
     tutoringHistory: str = ""
     concern: str = Field(default="", max_length=4000)
+    assessmentAnswers: dict[str, str] = Field(default_factory=dict)
+    assessmentResult: dict[str, Any] = Field(default_factory=dict)
     submittedAt: str | None = None
 
 
@@ -51,17 +53,33 @@ TRACK_PROMPTS = {
 
 
 def build_rule_based_report(payload: LearningCheckupRequest) -> str:
-    focus_line = payload.weakArea or payload.concern or "study consistency"
-    strength_line = payload.strengthArea or "general classroom learning"
+    result = payload.assessmentResult or {}
+    weakest_skill = result.get("weakestSkill") or {}
+    strongest_skill = result.get("strongestSkill") or {}
+    skill_scores = result.get("skillScores") or []
+    focus_line = weakest_skill.get("skill") or payload.weakArea or payload.concern or "study consistency"
+    strength_line = strongest_skill.get("skill") or payload.strengthArea or "general classroom learning"
     target_line = payload.targetGoal or "stronger academic progress"
     study_line = payload.studyTime or "an unclear weekly study routine"
     tutoring_line = payload.tutoringHistory or "no tutoring history provided"
+    score_line = (
+        f"Online assessment score: {result.get('correct')}/{result.get('total')} "
+        f"({result.get('percentage')}%) - {result.get('level')}"
+        if result
+        else f"Current level: {payload.currentLevel or 'Not specified'}"
+    )
+    skill_lines = "\n".join(
+        f"- {item.get('skill')}: {item.get('correct')}/{item.get('total')}"
+        for item in skill_scores
+    )
 
     return (
         f"Learning Checkup Summary for {payload.studentName or 'the student'}\n\n"
         f"Track: {payload.trackLabel}\n"
-        f"Current level: {payload.currentLevel or 'Not specified'}\n"
+        f"{score_line}\n"
         f"Target goal: {target_line}\n\n"
+        f"Skill breakdown:\n"
+        f"{skill_lines or '- Not enough assessment data provided.'}\n\n"
         f"Likely strength area:\n"
         f"- {strength_line} appears to be a useful base to build on.\n\n"
         f"Main risk area:\n"
@@ -95,6 +113,8 @@ def build_ai_prompt(payload: LearningCheckupRequest) -> str:
         f"Study time: {payload.studyTime}\n"
         f"Tutoring history: {payload.tutoringHistory}\n"
         f"Main concern: {payload.concern}\n"
+        f"Assessment result JSON: {json.dumps(payload.assessmentResult)}\n"
+        f"Assessment answers JSON: {json.dumps(payload.assessmentAnswers)}\n"
     )
 
 
