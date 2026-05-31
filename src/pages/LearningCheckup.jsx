@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Mail, MessageCircle, Sparkles, Target, TrendingUp, Users } from 'lucide-react'
+import { send as emailjsSend } from '@emailjs/browser'
+import { Mail, Sparkles, Target, TrendingUp } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -60,9 +61,9 @@ const initialForm = (track) => ({
 })
 
 const reportHighlights = [
-  'A short AI readiness summary tailored to the selected exam path',
+  'An online test-style checkup tailored to the selected exam path',
   'Likely strength areas and risk areas based on the submitted answers',
-  '3 practical next steps parents and students can act on immediately',
+  'A learning summary report sent to the parent email',
 ]
 
 function buildSubmissionPayload(track, values) {
@@ -72,6 +73,61 @@ function buildSubmissionPayload(track, values) {
     ...values,
     submittedAt: new Date().toISOString(),
   }
+}
+
+function buildLocalReport(payload) {
+  const student = payload.studentName || 'the student'
+  const focusArea = payload.weakArea || payload.concern || 'study consistency'
+  const strengthArea = payload.strengthArea || 'general classroom learning'
+  const targetGoal = payload.targetGoal || 'stronger academic progress'
+  const studyTime = payload.studyTime || 'not specified'
+
+  return [
+    `${payload.trackLabel} Learning Summary Report for ${student}`,
+    '',
+    `Current level: ${payload.currentLevel || 'Not specified'}`,
+    `Target goal: ${targetGoal}`,
+    '',
+    'Summary:',
+    `${student} has a useful foundation for ${payload.trackLabel}. The next improvement should focus on ${focusArea.toLowerCase()} while continuing to build from ${strengthArea.toLowerCase()}.`,
+    '',
+    'Strength:',
+    `- ${strengthArea} appears to be the strongest base to build on.`,
+    '',
+    'Priority risk:',
+    `- ${focusArea} is the clearest area affecting readiness right now.`,
+    `- Current weekly study time: ${studyTime}.`,
+    '',
+    'Recommended next steps:',
+    `1. Complete two focused practice sessions on ${focusArea.toLowerCase()} this week.`,
+    '2. Review every incorrect answer and write down the reason for the mistake.',
+    '3. Repeat one timed mini-test next week and compare accuracy, speed, and confidence.',
+  ].join('\n')
+}
+
+async function sendEmailReport(payload, report) {
+  const emailjsService = import.meta.env.VITE_EMAILJS_SERVICE_ID
+  const emailjsTemplate = import.meta.env.VITE_EMAILJS_TEMPLATE_ID
+  const emailjsKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+
+  if (!emailjsService || !emailjsTemplate || !emailjsKey) {
+    return false
+  }
+
+  await emailjsSend(
+    emailjsService,
+    emailjsTemplate,
+    {
+      to_email: payload.email,
+      from_name: 'NextGenius',
+      parent_name: payload.parentName,
+      student_name: payload.studentName,
+      subject: `${payload.trackLabel} Learning Summary Report`,
+      message: report,
+    },
+    emailjsKey
+  )
+  return true
 }
 
 export default function LearningCheckup() {
@@ -86,10 +142,7 @@ export default function LearningCheckup() {
   const currentTrack = tracks[activeTrack]
   const currentForm = forms[activeTrack]
 
-  const submitEndpoint = import.meta.env.VITE_LEARNING_CHECKUP_API_URL || '/api/learning-checkup'
-  const fallbackRecipient = import.meta.env.VITE_SUBSCRIBE_RECIPIENT
-  const whatsappUrl = import.meta.env.VITE_K12_WHATSAPP_URL || 'https://wa.me/'
-  const communityUrl = import.meta.env.VITE_K12_COMMUNITY_URL || whatsappUrl
+  const submitEndpoint = import.meta.env.VITE_LEARNING_CHECKUP_API_URL
 
   const introCards = useMemo(
     () => [
@@ -100,13 +153,13 @@ export default function LearningCheckup() {
       },
       {
         icon: Sparkles,
-        title: 'AI-generated learning report',
-        body: 'After submission, families can receive a concise AI checkup summary and suggested next steps by email.',
+        title: 'Email learning summary',
+        body: 'After the online test, families receive a concise learning summary report by email.',
       },
       {
-        icon: Users,
-        title: 'Family follow-up channel',
-        body: 'Guide parents into a WhatsApp or WeChat community for support, reminders, and program updates.',
+        icon: Mail,
+        title: 'Simple parent outcome',
+        body: 'No group funnel or consultation step is required: complete the test and receive the report.',
       },
     ],
     []
@@ -131,7 +184,7 @@ export default function LearningCheckup() {
       return
     }
 
-    setStatus({ type: 'loading', message: 'Submitting checkup...' })
+    setStatus({ type: 'loading', message: 'Submitting online test...' })
 
     try {
       if (submitEndpoint) {
@@ -145,42 +198,40 @@ export default function LearningCheckup() {
           throw new Error('Failed to submit learning checkup')
         }
 
+        const data = await response.json()
         setStatus({
           type: 'success',
-          message: 'Thanks — the checkup was submitted and the AI report workflow has been triggered for this email.',
+          message: `Your online test is complete. The learning summary report has been prepared for ${payload.email}.`,
+          report: data?.report || '',
         })
         return
       }
 
-      if (fallbackRecipient) {
-        const response = await fetch(`https://formsubmit.co/ajax/${fallbackRecipient}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...payload,
-            _subject: `${payload.trackLabel} learning checkup request`,
-            message: JSON.stringify(payload, null, 2),
-          }),
-        })
+      const report = buildLocalReport(payload)
+      const emailSent = await sendEmailReport(payload, report)
 
-        if (!response.ok) {
-          throw new Error('Fallback submission failed')
-        }
-
+      if (emailSent) {
         setStatus({
           type: 'success',
-          message: 'Submitted. The intake was captured and is ready to be used for an AI report email follow-up.',
+          message: `Your online test is complete. The learning summary report has been sent to ${payload.email}.`,
+          report,
         })
         return
       }
 
       setStatus({
         type: 'info',
-        message: 'The page UI is ready, but the email/report endpoint is not configured yet. Connect VITE_LEARNING_CHECKUP_API_URL to activate automatic AI email reports.',
+        message: 'Your online test is complete. Email delivery is not configured on this site yet, so the learning summary report is shown below.',
+        report,
       })
     } catch (error) {
       console.error(error)
-      setStatus({ type: 'error', message: 'Submission failed. Please try again or contact us on WhatsApp.' })
+      const report = buildLocalReport(payload)
+      setStatus({
+        type: 'info',
+        message: 'Your online test is complete. The email service is temporarily unavailable, so the learning summary report is shown below.',
+        report,
+      })
     }
   }
 
@@ -201,10 +252,7 @@ export default function LearningCheckup() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <a href="#checkup-form" className="rounded-lg bg-white px-6 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-100">
-                Start the free checkup
-              </a>
-              <a href={whatsappUrl} target="_blank" rel="noreferrer" className="rounded-lg border border-white/30 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10">
-                Talk on WhatsApp
+                Start the online test
               </a>
             </div>
           </div>
@@ -212,7 +260,7 @@ export default function LearningCheckup() {
             <CardHeader>
               <CardTitle className="text-2xl">What families receive</CardTitle>
               <CardDescription className="text-slate-200">
-                A simple lead-generation and diagnosis flow you can extend later with full AI automation.
+                Complete the online test and receive a learning summary report by email.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -284,10 +332,10 @@ export default function LearningCheckup() {
                       </div>
 
                       <div className="grid gap-4 md:grid-cols-2">
-                        <Field label="Email for AI report">
+                        <Field label="Email for learning summary report">
                           <Input type="email" value={forms[key].email} onChange={(e) => updateForm(key, 'email', e.target.value)} placeholder="parent@example.com" />
                         </Field>
-                        <Field label="WhatsApp / mobile (optional)">
+                        <Field label="Mobile (optional)">
                           <Input value={forms[key].phone} onChange={(e) => updateForm(key, 'phone', e.target.value)} placeholder="0412 345 678" />
                         </Field>
                       </div>
@@ -388,11 +436,11 @@ export default function LearningCheckup() {
                       </Field>
 
                       <div className="rounded-2xl border border-dashed border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900">
-                        After submission, the intended flow is: capture intake → generate AI learning summary → email report → invite the family into WhatsApp / WeChat follow-up.
+                        After submission, the flow is: do the online test → receive the learning summary report by email.
                       </div>
 
                       <Button type="submit" className="w-full" size="lg" disabled={status.type === 'loading'}>
-                        {status.type === 'loading' ? 'Submitting...' : 'Get free learning checkup'}
+                        {status.type === 'loading' ? 'Submitting...' : 'Submit online test'}
                       </Button>
                     </form>
                   </TabsContent>
@@ -410,6 +458,11 @@ export default function LearningCheckup() {
                   }`}
                 >
                   {status.message}
+                  {status.report ? (
+                    <pre className="mt-4 max-h-96 overflow-auto whitespace-pre-wrap rounded-xl bg-white/70 p-4 text-slate-800">
+                      {status.report}
+                    </pre>
+                  ) : null}
                 </div>
               ) : null}
             </CardContent>
@@ -420,55 +473,19 @@ export default function LearningCheckup() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl">
                   <Mail className="h-5 w-5 text-indigo-600" />
-                  AI report by email
+                  Learning summary by email
                 </CardTitle>
                 <CardDescription>
-                  This page is already structured for automatic email delivery once the report endpoint is connected.
+                  The intended result is simple: finish the online test and receive the report by email.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 text-sm text-slate-600">
-                <p>Recommended production flow:</p>
+                <p>Correct flow:</p>
                 <ul className="list-disc space-y-2 pl-5">
-                  <li>Store the intake with track + answers + email.</li>
+                  <li>Complete the online test.</li>
                   <li>Generate a concise AI diagnostic report with study priorities.</li>
-                  <li>Send the result to the family email automatically.</li>
-                  <li>Optionally notify staff or push the lead into CRM/Sheets.</li>
+                  <li>Send the learning summary report to the parent email.</li>
                 </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-xl">
-                  <MessageCircle className="h-5 w-5 text-green-600" />
-                  Community follow-up
-                </CardTitle>
-                <CardDescription>
-                  Give parents a fast next step after the form: join your WhatsApp or WeChat support channel.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <a
-                  href={whatsappUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 hover:bg-slate-50"
-                >
-                  <span>Open WhatsApp consultation</span>
-                  <MessageCircle className="h-4 w-4" />
-                </a>
-                <a
-                  href={communityUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 hover:bg-slate-50"
-                >
-                  <span>Join WeChat / parent community</span>
-                  <Users className="h-4 w-4" />
-                </a>
-                <p className="text-xs text-slate-500">
-                  Tip: wire these links to your real WhatsApp deep link or a QR/community landing page via env vars.
-                </p>
               </CardContent>
             </Card>
           </div>
